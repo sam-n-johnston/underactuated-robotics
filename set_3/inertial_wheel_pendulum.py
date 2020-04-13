@@ -117,7 +117,6 @@ class InertialWheelPendulum(VectorSystem):
         # You might want at least one of these.
         (M, C_f, tauG_f, B_f) = self.GetManipulatorDynamics(q_f, qd_f)
 
-
         '''
         Autograded answer for 3.1: Fill in the rest of this function,
         computing the linearized dynamics of this system around the
@@ -134,6 +133,9 @@ class InertialWheelPendulum(VectorSystem):
         A[1,3] = 1 
         A[2,0] = self.g * lengthAndMass / lengthAndMassSquaredI1
         A[3,0] = -self.g * lengthAndMass / lengthAndMassSquaredI1
+        
+        print('A')
+        print(A)
         
         B[2,0] = -1 / lengthAndMassSquaredI1
         B[3,0] = (lengthAndMassSquaredI1 + self.I2) / (lengthAndMassSquaredI1) * self.I2
