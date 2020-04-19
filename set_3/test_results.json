@@ -1,5 +1,5 @@
 {
-    "execution_time": "5.93", 
+    "execution_time": "3.70", 
     "tests": [
         {
             "score": 4, 
@@ -25,23 +25,25 @@
             "name": "Problem 3.2: Controllability"
         }, 
         {
-            "output": "A\n[[ 0.  0.  1.  0.]\n [ 0.  0.  0.  1.]\n [ 5.  0.  0.  0.]\n [-5.  0.  0.  0.]]\nb\n[[ 0. ]\n [ 0. ]\n [-0.1]\n [ 1.1]]\n", 
-            "score": 4, 
+            "output": "A\n[[ 0.  0.  1.  0.]\n [ 0.  0.  0.  1.]\n [ 5.  0.  0.  0.]\n [-5.  0.  0.  0.]]\nb\n[[ 0. ]\n [ 0. ]\n [-0.1]\n [ 1.1]]\nA_prime\n[[ 0.  1.  0.]\n [ 0.  0.  1.]\n [-5.  0.  0.]]\ntrying k2\n[[  -1.178    0.     903.72   176.83 ]]\nTest Failed: x0 = [ 3.192  0.     0.     0.   ] did not converge to the upright fixed point. Final state was instead [ 3.59  -1.996  1.252 -6.122]\n", 
+            "score": 0.0, 
             "max_score": 4, 
             "name": "Problem 3.3: LQR"
         }, 
         {
-            "score": 2, 
+            "output": "Test Failed: x0 = [ 3.152  0.     0.     0.   ] did not converge to the upright fixed point. Final state was instead [  4.555  -6.325   3.311 -12.652]\n", 
+            "score": 0.0, 
             "max_score": 2, 
             "name": "Problem 3.4: LQR ROA, Prologue"
         }, 
         {
-            "score": 2, 
+            "output": "Test Failed: V([  6.804  42.56  -42.896 -41.287]) was nonpositive.\n", 
+            "score": 0.0, 
             "max_score": 2, 
             "name": "Problem 3.5: LQR ROA, Evaluating F, V, and Vdot"
         }, 
         {
-            "output": "smalled_v\n0.0468652628549\nTest Failed: Vdot sampled at x0=[ 3.094  8.226  0.098  0.104] was positive (Vdot = 0.0337280797387)\n", 
+            "output": "-10116.8273821\nTest Failed: rho should be bigger than 0.\n", 
             "score": 0.0, 
             "max_score": 3, 
             "name": "Problem 3.6: LQR ROA, Numerical estimate of the ROA"
@@ -53,6 +55,6 @@
             "name": "Problem 3.8: Combined Swing-Up and Stabilization"
         }
     ], 
-    "score": 18.0, 
+    "score": 10.0, 
     "leaderboard": []
 }
