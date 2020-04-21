@@ -1,5 +1,5 @@
 {
-    "execution_time": "5.21", 
+    "execution_time": "3.56", 
     "tests": [
         {
             "score": 4, 
@@ -41,7 +41,7 @@
             "name": "Problem 3.5: LQR ROA, Evaluating F, V, and Vdot"
         }, 
         {
-            "output": "0.0\n1.42696950421\nTest Failed: Vdot sampled at x0=[ 2.983  6.818  0.321  0.599] was positive (Vdot = 1.15335091635)\n", 
+            "output": "smalled_v\n4.56360469395\nTest Failed: Vdot sampled at x0=[ 2.887  4.589  0.566  0.661] was positive (Vdot = 128.486345079)\n", 
             "score": 0.0, 
             "max_score": 3, 
             "name": "Problem 3.6: LQR ROA, Numerical estimate of the ROA"
