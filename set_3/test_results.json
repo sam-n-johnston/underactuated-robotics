@@ -1,5 +1,5 @@
 {
-    "execution_time": "19.88", 
+    "execution_time": "35.60", 
     "tests": [
         {
             "score": 4, 
@@ -41,7 +41,8 @@
             "name": "Problem 3.5: LQR ROA, Evaluating F, V, and Vdot"
         }, 
         {
-            "score": 3, 
+            "output": "Test Failed: u'Timed Out'\n", 
+            "score": 0.0, 
             "max_score": 3, 
             "name": "Problem 3.6: LQR ROA, Numerical estimate of the ROA"
         }, 
@@ -52,6 +53,6 @@
             "name": "Problem 3.8: Combined Swing-Up and Stabilization"
         }
     ], 
-    "score": 21.0, 
+    "score": 18.0, 
     "leaderboard": []
 }
