@@ -1,0 +1,58 @@
+{
+    "execution_time": "29.06", 
+    "tests": [
+        {
+            "score": 4, 
+            "max_score": 4, 
+            "name": "Problem 2_1: Finding Q"
+        }, 
+        {
+            "output": "A\n[[ 0.  0.  1.  0.]\n [ 0.  0.  0.  1.]\n [ 5.  0.  0.  0.]\n [-5.  0.  0.  0.]]\n", 
+            "score": 2, 
+            "max_score": 2, 
+            "name": "Problem 3_1: Linearization, A matrix"
+        }, 
+        {
+            "output": "A\n[[ 0.  0.  1.  0.]\n [ 0.  0.  0.  1.]\n [ 5.  0.  0.  0.]\n [-5.  0.  0.  0.]]\n", 
+            "score": 2, 
+            "max_score": 2, 
+            "name": "Problem 3_1: Linearization, B matrix"
+        }, 
+        {
+            "output": "A\n[[ 0.  0.  1.  0.]\n [ 0.  0.  0.  1.]\n [ 5.  0.  0.  0.]\n [-5.  0.  0.  0.]]\nA\n[[ 0.  0.  1.  0.]\n [ 0.  0.  0.  1.]\n [ 5.  0.  0.  0.]\n [-5.  0.  0.  0.]]\ncontrollability_matrix\n[[ 1.  0.  1.  0.]\n [ 0.  1.  0.  1.]]\ncontrollability_matrix\n[[ 1.  0.  0.  0.]\n [ 0.  1.  0.  0.]]\ncontrollability_matrix\n[[ 0.  -0.1  0.  -0.5]\n [ 0.   1.1  0.   0.5]\n [-0.1  0.  -0.5  0. ]\n [ 1.1  0.   0.5  0. ]]\ncontrollability_matrix\n[[ 0.  -0.1  0.  -0.5]\n [ 0.   1.1  0.   0.5]\n [-0.1  0.  -0.5  0. ]\n [ 1.1  0.   0.5  0. ]]\ncontrollability_matrix\n[[ 0.  0.]\n [ 0.  0.]]\ncontrollability_matrix\n[[ 1.  1.]\n [ 1.  1.]]\ncontrollability_matrix\n[[ 0.  0.  0.  0.  0.  0.  0.  0.  0.  0.]\n [ 0.  0.  0.  0.  0.  0.  0.  0.  0.  0.]\n [ 0.  0.  0.  0.  0.  0.  0.  0.  0.  0.]\n [ 0.  0.  0.  0.  0.  0.  0.  0.  0.  0.]\n [ 0.  0.  0.  0.  0.  0.  0.  0.  0.  0.]]\n", 
+            "score": 2, 
+            "max_score": 2, 
+            "name": "Problem 3.2: Controllability"
+        }, 
+        {
+            "output": "A\n[[ 0.  0.  1.  0.]\n [ 0.  0.  0.  1.]\n [ 5.  0.  0.  0.]\n [-5.  0.  0.  0.]]\nb\n[[ 0. ]\n [ 0. ]\n [-0.1]\n [ 1.1]]\n", 
+            "score": 4, 
+            "max_score": 4, 
+            "name": "Problem 3.3: LQR"
+        }, 
+        {
+            "score": 2, 
+            "max_score": 2, 
+            "name": "Problem 3.4: LQR ROA, Prologue"
+        }, 
+        {
+            "score": 2, 
+            "max_score": 2, 
+            "name": "Problem 3.5: LQR ROA, Evaluating F, V, and Vdot"
+        }, 
+        {
+            "output": "Test Failed: Vdot sampled at x0=[ 8.811  1.113  1.342  0.593] was positive (Vdot = 5.49684138888)\n", 
+            "score": 0.0, 
+            "max_score": 3, 
+            "name": "Problem 3.6: LQR ROA, Numerical estimate of the ROA"
+        }, 
+        {
+            "output": "Test Failed: x0 = [  0.   0.   0.  20.] did not converge to the upright fixed point. Final state was instead [ -36.265  794.437   -3.548   27.755]\n", 
+            "score": 0.0, 
+            "max_score": 4, 
+            "name": "Problem 3.8: Combined Swing-Up and Stabilization"
+        }
+    ], 
+    "score": 18.0, 
+    "leaderboard": []
+}
