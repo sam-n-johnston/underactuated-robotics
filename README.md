@@ -1,7 +1,9 @@
 
 # Underactuated robotics assignments - MIT 6.824
 
-# Underactuated assignments
+## Prerequesits
+
+You need to have docker installed. These instructions work for mac.
 
 ## Set 1
 
