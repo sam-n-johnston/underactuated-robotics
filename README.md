@@ -1,4 +1,21 @@
+
+# Underactuated robotics assignments - MIT 6.824
+
 # Underactuated assignments
+
+## Set 1
+
+To start set 1, run:
+```
+./drake_docker_utility_scripts/docker_run_notebook.sh drake-20190508  ./set_1/
+```
+
+## Set 2
+
+To start set 2, run:
+```
+./drake_docker_utility_scripts/docker_run_notebook.sh drake-20190508  ./set_2/
+```
 
 ## Set 3
 
