@@ -65,10 +65,67 @@ class Hopper2dController(VectorSystem):
         self.m_b = 1.0
         self.m_f = 0.1
         self.l_max = 0.5
+        self.desired_height = 1. # I added this
 
         # This is an arbitrary choice of spring constant for the leg.
         self.K_l = 100
-           
+         
+    def calculate_moment_of_inertia(self):
+        return self.m_f * self.l_max ** 2.
+
+    def calculate_lift_off_angle(self):
+        return math.atan2(self.desired_lateral_velocity, (2 * 9.81 * self.desired_height) ** (1. / 2.))
+        
+    def calculate_time_required_btwn_lo_and_td(self):
+        lift_off_height = math.cos(self.calculate_lift_off_angle()) * self.hopper_leg_length 
+        intial_vertical_speed = -(2 * 9.81 * self.desired_height) ** (1. / 2.)
+        final_vertical_speed = -intial_vertical_speed
+        return (final_vertical_speed - intial_vertical_speed) / 9.81
+
+    def calculate_desired_acceleration(self):
+        current_position = -self.calculate_lift_off_angle()
+        desired_position = 0
+        t = self.calculate_time_required_btwn_lo_and_td() / 2.
+        initial_alpha_d = 0
+        return 2 * (desired_position - current_position - initial_alpha_d * t) / (t ** 2.)
+
+    def ChooseThighTorque(self, X):
+        ''' Given the system state X,
+            returns a (scalar) leg angle torque to exert. '''
+        x, z, theta, alpha, l = X[0:5]
+        xd, zd, thetad, alphad, ld = X[5:10]
+        
+        # Run out the forward kinematics of the robot
+        # to figure out where the foot is in world frame.
+        foot_point = np.array([0.0, 0.0, -self.hopper_leg_length])
+        foot_point_in_world = self.hopper.CalcPointsPositions(self.plant_context, 
+                              self.foot_body_frame, foot_point, self.world_frame)
+        in_contact = foot_point_in_world[2] <= 0.01
+        
+        # It's all yours from here.
+        # Implement a controller that:
+        #  - Controls xd to self.desired_lateral_velocity
+        #  - Attempts to keep the body steady (theta = 0)
+
+        if (in_contact):
+            if (zd > 0):
+                # On the way back up,
+                # "push" harder by increasing the effective
+                # spring constant.
+                torque = 0.
+            else:
+                # On the way down,
+                # "push" less hard by decreasing the effective
+                # spring constant.
+                torque = 0. # 1.
+        else:
+            if (zd > 0):
+                torque = 10. * self.calculate_moment_of_inertia() * self.calculate_desired_acceleration()
+            else:
+                torque = -10. * self.calculate_moment_of_inertia() * self.calculate_desired_acceleration()
+                
+        return torque
+      
     def ChooseSpringRestLength(self, X):
         ''' Given the system state X,
             returns a (scalar) rest length of the leg spring.
@@ -115,25 +172,6 @@ class Hopper2dController(VectorSystem):
 
         return l_rest
 
-    def ChooseThighTorque(self, X):
-        ''' Given the system state X,
-            returns a (scalar) leg angle torque to exert. '''
-        x, z, theta, alpha, l = X[0:5]
-        xd, zd, thetad, alphad, ld = X[5:10]
-        
-        # Run out the forward kinematics of the robot
-        # to figure out where the foot is in world frame.
-        foot_point = np.array([0.0, 0.0, -self.hopper_leg_length])
-        foot_point_in_world = self.hopper.CalcPointsPositions(self.plant_context, 
-                              self.foot_body_frame, foot_point, self.world_frame)
-        in_contact = foot_point_in_world[2] <= 0.01
-        
-        # It's all yours from here.
-        # Implement a controller that:
-        #  - Controls xd to self.desired_lateral_velocity
-        #  - Attempts to keep the body steady (theta = 0)
-        return 0.0
-    
     def DoCalcVectorOutput(self, context, u, x, y):
         # The naming if inputs is confusing, as this is a separate
         # system with its own state (x) and input (u), but the input
