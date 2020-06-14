@@ -101,41 +101,45 @@ class Hopper2dController(VectorSystem):
         
         return K1 * (xd - xd_desired) + K2 * (theta - theta_desired) + K3 * thetad
     
-    def get_desired_alpha(self, X):
+    def get_desired_alpha_in_air(self, X):
         x, z, theta, alpha, l = X[0:5]
         xd, zd, thetad, alphad, ld = X[5:10]
         mb = self.m_b
         mf = self.m_f
         l = self.hopper_leg_length
         
-        # get landing position (x)
-
         x_err = self.get_x_err(X)
         opposing_side = ((mb + mf) * x_err) / (l * mb)
 
         if opposing_side > 1.:
-#             print('opposing_side')
-#             print(alpha)
-#             print(opposing_side)
+            print('x_err is probably too |large| and is causing problems')
             opposing_side = 1.
 
         if opposing_side < -1.:
-#             print('opposing_side')
-#             print(alpha)
-#             print(opposing_side)
+            print('x_err is probably too |large| and is causing problems')
             opposing_side = -1.
 
         desired_alpha = - math.asin(opposing_side) - theta
         self.desired_alpha_array.append(desired_alpha)
         return desired_alpha
+    
+    def get_desired_alpha_in_contact(self, X):
+        x, z, theta, alpha, l = X[0:5]
         
-    def PD_controller(self, X):
+        return alpha + theta
+        
+    def PD_controller(self, X, in_contact):
         x, z, theta, alpha, l = X[0:5]
         xd, zd, thetad, alphad, ld = X[5:10]
         
-        Kp = -100.
-        Kv = -5.
-        alpha_desired = self.get_desired_alpha(X)
+        if in_contact:
+            Kp = -100.
+            Kv = -5.
+            alpha_desired = self.get_desired_alpha_in_contact(X)
+        else:
+            Kp = -100.
+            Kv = -5.
+            alpha_desired = self.get_desired_alpha_in_air(X)
 
         return Kp * (alpha - alpha_desired) + Kv * (alphad)
         
@@ -157,23 +161,7 @@ class Hopper2dController(VectorSystem):
         #  - Controls xd to self.desired_lateral_velocity
         #  - Attempts to keep the body steady (theta = 0)
 
-        if (in_contact):
-            if (zd > 0):
-                # On the way back up,
-                # "push" harder by increasing the effective
-                # spring constant.
-                torque = 0.
-            else:
-                # On the way down,
-                # "push" less hard by decreasing the effective
-                # spring constant.
-                torque = 0. # 1.
-        else:
-            torque = self.PD_controller(X)
-#             if (zd > 0):
-#                 torque = 10. * self.calculate_moment_of_inertia() * self.calculate_desired_acceleration()
-#             else:
-#                 torque = -10. * self.calculate_moment_of_inertia() * self.calculate_desired_acceleration()
+        torque = self.PD_controller(X, in_contact)
                 
         return torque
       
