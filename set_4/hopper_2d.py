@@ -95,9 +95,9 @@ class Hopper2dController(VectorSystem):
         xd, zd, thetad, alphad, ld = X[5:10]
         xd_desired = self.desired_lateral_velocity
         theta_desired = 0
-        K1 = 0.3
-        K2 = -0.1
-        K3 = -0.1
+        K1 = 2.
+        K2 = 2.
+        K3 = 1.
         
         return K1 * (xd - xd_desired) + K2 * (theta - theta_desired) + K3 * thetad
     
@@ -107,16 +107,17 @@ class Hopper2dController(VectorSystem):
         mb = self.m_b
         mf = self.m_f
         l = self.hopper_leg_length
+        K_err = 0.1
         
-        x_err = self.get_x_err(X)
+        x_err = K_err * self.get_x_err(X)
         opposing_side = ((mb + mf) * x_err) / (l * mb)
 
         if opposing_side > 1.:
-            print('x_err is probably too |large| and is causing problems')
+#             print('x_err is probably too |large| and is causing problems')
             opposing_side = 1.
 
         if opposing_side < -1.:
-            print('x_err is probably too |large| and is causing problems')
+#             print('x_err is probably too |-large| and is causing problems')
             opposing_side = -1.
 
         desired_alpha = - math.asin(opposing_side) - theta
@@ -128,18 +129,20 @@ class Hopper2dController(VectorSystem):
         
         return alpha + theta
         
-    def PD_controller(self, X, in_contact):
+    def PD_controller(self, X, in_contact, in_air):
         x, z, theta, alpha, l = X[0:5]
         xd, zd, thetad, alphad, ld = X[5:10]
         
         if in_contact:
-            Kp = -100.
+            Kp = -20.
             Kv = -5.
             alpha_desired = self.get_desired_alpha_in_contact(X)
-        else:
-            Kp = -100.
+        elif in_air:
+            Kp = -20.
             Kv = -5.
             alpha_desired = self.get_desired_alpha_in_air(X)
+        else:
+            return 0.
 
         return Kp * (alpha - alpha_desired) + Kv * (alphad)
         
@@ -155,13 +158,14 @@ class Hopper2dController(VectorSystem):
         foot_point_in_world = self.hopper.CalcPointsPositions(self.plant_context, 
                               self.foot_body_frame, foot_point, self.world_frame)
         in_contact = foot_point_in_world[2] <= 0.01
+        in_air = foot_point_in_world[2] >= 0.1
         
         # It's all yours from here.
         # Implement a controller that:
         #  - Controls xd to self.desired_lateral_velocity
         #  - Attempts to keep the body steady (theta = 0)
 
-        torque = self.PD_controller(X, in_contact)
+        torque = self.PD_controller(X, in_contact, in_air)
                 
         return torque
       
