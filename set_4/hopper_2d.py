@@ -69,6 +69,7 @@ class Hopper2dController(VectorSystem):
 
         # This is an arbitrary choice of spring constant for the leg.
         self.K_l = 100
+        self.desired_alpha_array = []
          
     def calculate_moment_of_inertia(self):
         return self.m_f * self.l_max ** 2.
@@ -89,6 +90,55 @@ class Hopper2dController(VectorSystem):
         initial_alpha_d = 0
         return 2 * (desired_position - current_position - initial_alpha_d * t) / (t ** 2.)
 
+    def get_x_err(self, X):
+        x, z, theta, alpha, l = X[0:5]
+        xd, zd, thetad, alphad, ld = X[5:10]
+        xd_desired = self.desired_lateral_velocity
+        theta_desired = 0
+        K1 = -1.0
+        K2 = -0.0
+        K3 = -0.0
+        
+        return 0. # K1 * (xd - xd_desired) + K2 * (theta - theta_desired) + K3 * thetad
+    
+    def get_desired_alpha(self, X):
+        x, z, theta, alpha, l = X[0:5]
+        xd, zd, thetad, alphad, ld = X[5:10]
+        mb = self.m_b
+        mf = self.m_f
+        l = self.hopper_leg_length
+        
+        # get landing position (x)
+
+        x_err = self.get_x_err(X)
+        opposing_side = ((mb + mf) * x_err) / (l * mb)
+
+        if opposing_side > 1.:
+#             print('opposing_side')
+#             print(alpha)
+#             print(opposing_side)
+            opposing_side = 1.
+
+        if opposing_side < -1.:
+#             print('opposing_side')
+#             print(alpha)
+#             print(opposing_side)
+            opposing_side = -1.
+
+        desired_alpha = - math.asin(opposing_side) - theta
+        self.desired_alpha_array.append(desired_alpha)
+        return desired_alpha
+        
+    def PD_controller(self, X):
+        x, z, theta, alpha, l = X[0:5]
+        xd, zd, thetad, alphad, ld = X[5:10]
+        
+        Kp = -100.
+        Kv = -5.
+        alpha_desired = self.get_desired_alpha(X)
+
+        return Kp * (alpha - alpha_desired) + Kv * (alphad)
+        
     def ChooseThighTorque(self, X):
         ''' Given the system state X,
             returns a (scalar) leg angle torque to exert. '''
@@ -119,10 +169,11 @@ class Hopper2dController(VectorSystem):
                 # spring constant.
                 torque = 0. # 1.
         else:
-            if (zd > 0):
-                torque = 10. * self.calculate_moment_of_inertia() * self.calculate_desired_acceleration()
-            else:
-                torque = -10. * self.calculate_moment_of_inertia() * self.calculate_desired_acceleration()
+            torque = self.PD_controller(X)
+#             if (zd > 0):
+#                 torque = 10. * self.calculate_moment_of_inertia() * self.calculate_desired_acceleration()
+#             else:
+#                 torque = -10. * self.calculate_moment_of_inertia() * self.calculate_desired_acceleration()
                 
         return torque
       
@@ -232,11 +283,13 @@ def Simulate2dHopper(x0, duration,
     state_log.DeclarePeriodicPublish(0.0333, 0.0) # 30hz logging
     builder.Connect(plant.get_continuous_state_output_port(), state_log.get_input_port(0))
     
-    # The controller
-    controller = builder.AddSystem(
-        Hopper2dController(plant,
+    sams_controller = Hopper2dController(plant,
             desired_lateral_velocity = desired_lateral_velocity,
-            print_period = print_period))
+            print_period = print_period)
+    desired_alpha = sams_controller.desired_alpha_array
+
+    # The controller
+    controller = builder.AddSystem(sams_controller)
     builder.Connect(plant.get_continuous_state_output_port(), controller.get_input_port(0))
     builder.Connect(controller.get_output_port(0), plant.get_actuation_input_port())
     
@@ -250,7 +303,7 @@ def Simulate2dHopper(x0, duration,
     plant_context.get_mutable_discrete_state_vector().SetFromVector(x0)
 
     simulator.StepTo(duration)
-    return plant, controller, state_log
+    return plant, controller, state_log, desired_alpha
 
 
 def ConstructVisualizer():
