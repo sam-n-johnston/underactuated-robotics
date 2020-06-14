@@ -95,9 +95,9 @@ class Hopper2dController(VectorSystem):
         xd, zd, thetad, alphad, ld = X[5:10]
         xd_desired = self.desired_lateral_velocity
         theta_desired = 0
-        K1 = 2.
-        K2 = 2.
-        K3 = 1.
+        K1 = 1.2
+        K2 = 4.
+        K3 = 2.
         
         return K1 * (xd - xd_desired) + K2 * (theta - theta_desired) + K3 * thetad
     
@@ -295,7 +295,7 @@ def Simulate2dHopper(x0, duration,
     plant_context.get_mutable_discrete_state_vector().SetFromVector(x0)
 
     simulator.StepTo(duration)
-    return plant, controller, state_log, desired_alpha
+    return plant, controller, state_log # , desired_alpha ## Add if you want to see the desired alpha of the system
 
 
 def ConstructVisualizer():
