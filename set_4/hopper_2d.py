@@ -95,7 +95,7 @@ class Hopper2dController(VectorSystem):
         xd, zd, thetad, alphad, ld = X[5:10]
         xd_desired = self.desired_lateral_velocity
         theta_desired = 0
-        K1 = -0.02
+        K1 = -0.07
         K2 = -0.2
         K3 = -0.1
         
