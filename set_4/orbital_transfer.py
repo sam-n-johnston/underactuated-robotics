@@ -3,6 +3,7 @@ def transfer_orbits():
     return 1
 
 from numpy import sin, cos
+from pydrake.all import MathematicalProgram, Solve
 import numpy as np
 
 from pydrake.all import MathematicalProgram, Solve, IpoptSolver, SolverOptions
@@ -19,9 +20,9 @@ class OrbitalTransferRocket():
         self.M1 = 0.4  # mass of first planet
         self.M2 = 0.1  # mass of second lanet
         self.world_1_position = np.asarray([-2.5,-0.1])
-        self.world_1_color    = "black"   # change to 'darkgreen' for photorealistic Earth sim
+        self.world_1_color    = "darkgreen"   # change to 'darkgreen' for photorealistic Earth sim
         self.world_2_position = np.asarray([2.5,0.1])
-        self.world_2_color    = "black"   # change to 'orangered' for photorealistic Mars sim
+        self.world_2_color    = "orangered"   # change to 'orangered' for photorealistic Mars sim
 
     def rocket_dynamics(self, state, u):
         '''
@@ -203,14 +204,70 @@ class OrbitalTransferRocket():
             time_array: an array with N rows. 
 
         '''
-    
-        print "Function not yet implemented"
-
+        
+        mp = MathematicalProgram()
+        
         N = 50
-        trajectory = np.zeros((N+1,4))
-        input_trajectory = np.ones((N,2))*10.0
+#         trajectory = np.zeros((N+1,4))
+#         input_trajectory = np.ones((N,2))*10.0
         time_used = 100.0
-        time_array = np.arange(0.0, time_used, time_used/(N+1))
+        time_step = time_used/(N+1)
+        time_array = np.arange(0.0, time_used, time_step)
+
+        k = 0
+        # Create continuous variables for u & x
+        u = mp.NewContinuousVariables(2, "u_%d" % k)
+        x = mp.NewContinuousVariables(4, "x_%d" % k)
+        u_over_time = u
+        x_over_time = x
+        
+        for k in range(1, N):
+            u = mp.NewContinuousVariables(2, "u_%d" % k)
+            x = mp.NewContinuousVariables(4, "x_%d" % k)
+            u_over_time = np.vstack((u_over_time, u))
+            x_over_time = np.vstack((x_over_time, x))
+
+        # trajectory is N+1 in size
+        x = mp.NewContinuousVariables(4, "x_%d" % (N+1))
+        x_over_time = np.vstack((x_over_time, x))
+        
+        mp.AddQuadraticCost(1 * u_over_time[:,0].dot(u_over_time[:,0]))
+        mp.AddQuadraticCost(1 * u_over_time[:,1].dot(u_over_time[:,1]))
+        
+        # Add constraint for initial state
+        mp.AddLinearConstraint(x_over_time[-1,0] >= state_initial[0])
+        mp.AddLinearConstraint(x_over_time[-1,0] <= state_initial[0])
+        mp.AddLinearConstraint(x_over_time[-1,1] >= state_initial[1])
+        mp.AddLinearConstraint(x_over_time[-1,1] <= state_initial[1])
+        mp.AddLinearConstraint(x_over_time[-1,2] >= state_initial[2])
+        mp.AddLinearConstraint(x_over_time[-1,2] <= state_initial[2])
+        mp.AddLinearConstraint(x_over_time[-1,3] >= state_initial[3])
+        mp.AddLinearConstraint(x_over_time[-1,3] <= state_initial[3])
+
+        # Add constraint between x & u
+        k = 0
+        for k in range(1, N):
+            mp.AddLinearConstraint(x_over_time[N,0] <= x_over_time[N-1,0] + time_step*self.rocket_dynamics(x_over_time[N-1,:], u_over_time[N-1, :]))
+            mp.AddLinearConstraint(x_over_time[N,0] >= x_over_time[N-1,0] + time_step*self.rocket_dynamics(x_over_time[N-1,:], u_over_time[N-1, :]))
+            mp.AddLinearConstraint(x_over_time[N,1] <= x_over_time[N-1,1] + time_step*self.rocket_dynamics(x_over_time[N-1,:], u_over_time[N-1, :]))
+            mp.AddLinearConstraint(x_over_time[N,1] >= x_over_time[N-1,1] + time_step*self.rocket_dynamics(x_over_time[N-1,:], u_over_time[N-1, :]))
+            mp.AddLinearConstraint(x_over_time[N,2] <= x_over_time[N-1,2] + time_step*self.rocket_dynamics(x_over_time[N-1,:], u_over_time[N-1, :]))
+            mp.AddLinearConstraint(x_over_time[N,2] >= x_over_time[N-1,2] + time_step*self.rocket_dynamics(x_over_time[N-1,:], u_over_time[N-1, :]))
+            mp.AddLinearConstraint(x_over_time[N,3] <= x_over_time[N-1,3] + time_step*self.rocket_dynamics(x_over_time[N-1,:], u_over_time[N-1, :]))
+            mp.AddLinearConstraint(x_over_time[N,3] >= x_over_time[N-1,3] + time_step*self.rocket_dynamics(x_over_time[N-1,:], u_over_time[N-1, :]))
+        
+        world_1_position = self.world_1_position; world_2_position = self.world_2_position;
+        mp.AddLinearConstraint(x_over_time[-1,0] <= self.world_2_position[0])
+        mp.AddLinearConstraint(x_over_time[-1,0] >= self.world_2_position[0])
+        mp.AddLinearConstraint(x_over_time[-1,1] <= self.world_2_position[1])
+        mp.AddLinearConstraint(x_over_time[-1,1] >= self.world_2_position[1])
+        mp.AddLinearConstraint(x_over_time[-1,2] <= self.world_2_position[2])
+        mp.AddLinearConstraint(x_over_time[-1,2] >= self.world_2_position[2])
+        mp.AddLinearConstraint(x_over_time[-1,3] <= self.world_2_position[3])
+        mp.AddLinearConstraint(x_over_time[-1,3] >= self.world_2_position[3])
+
+        trajectory = x_over_time
+        input_trajectory = u_over_time
         return trajectory, input_trajectory, time_array
 
         
