@@ -209,7 +209,7 @@ class OrbitalTransferRocket():
         
         max_speed = 0.99
         desired_distance = 0.5
-        u_cost_factor = 100.
+        u_cost_factor = 1000.
         N = 50
 #         trajectory = np.zeros((N+1,4))
 #         input_trajectory = np.ones((N,2))*10.0
@@ -256,10 +256,6 @@ class OrbitalTransferRocket():
             mp.AddConstraint(x_over_time[k,1] == x_over_time[k-1,1] + time_step*next_step[1])
             mp.AddConstraint(x_over_time[k,2] == x_over_time[k-1,2] + time_step*next_step[2])
             mp.AddConstraint(x_over_time[k,3] == x_over_time[k-1,3] + time_step*next_step[3])
-#             mp.AddConstraint(self.two_norm(x_over_time[k,:] - x_over_time[k-1,:] + time_step*next_step) <= 0.001)
-#             mp.AddConstraint(self.two_norm(x_over_time[k,1] - x_over_time[k-1,1] + time_step*next_step[1]) <= 0)
-#             mp.AddConstraint(self.two_norm(x_over_time[k,2] - x_over_time[k-1,2] + time_step*next_step[2]) <= 0)
-#             mp.AddConstraint(self.two_norm(x_over_time[k,3] - x_over_time[k-1,3] + time_step*next_step[3]) <= 0)
             
         # Make sure it never goes too far from the planets
 #         for k in range(1, N):
@@ -267,12 +263,12 @@ class OrbitalTransferRocket():
 #             mp.AddConstraint(self.two_norm(x_over_time[k,0:2] - self.world_1_position[:]) <= 10)
             
         # Make sure u never goes above a threshold
-#         max_u = 1.
-#         for k in range(0, N):
-#             mp.AddLinearConstraint(u_over_time[k,0] <= max_u)
-#             mp.AddLinearConstraint(-u_over_time[k,0] <= max_u)
-#             mp.AddLinearConstraint(u_over_time[k,1] <= max_u)
-#             mp.AddLinearConstraint(-u_over_time[k,1] <= max_u)
+        max_u = 6.
+        for k in range(0, N):
+            mp.AddLinearConstraint(u_over_time[k,0] <= max_u)
+            mp.AddLinearConstraint(-u_over_time[k,0] <= max_u)
+            mp.AddLinearConstraint(u_over_time[k,1] <= max_u)
+            mp.AddLinearConstraint(-u_over_time[k,1] <= max_u)
             
         # Make sure it reaches world 2
         mp.AddConstraint(self.two_norm(x_over_time[-1,0:2] - self.world_2_position) <= desired_distance)

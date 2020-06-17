@@ -1,8 +1,8 @@
 {
-    "execution_time": "11.42", 
+    "execution_time": "11.17", 
     "tests": [
         {
-            "output": "('Success', True)\n('Final position', array([ 2.00472467,  0.03915305,  0.95590137, -0.21412281]))\n('Final distance to world2', 0.50000000000048428)\n('Final speed', 0.98010000000637865)\n('Fuel consumption', 10.751850653271079)\n('Success', True)\n('Final position', array([ 2.25948594, -0.33721046,  0.35882647,  0.91150402]))\n('Final distance to world2', 0.50000000000155431)\n('Final speed', 0.98010000008110687)\n('Fuel consumption', 44.832634944920201)\n('Success', True)\n('Final position', array([ 2.01310719, -0.0092492 ,  0.87833768,  0.43372679]))\n('Final distance to world2', 0.50000000000020661)\n('Final speed', 0.98010000004247211)\n('Fuel consumption', 116.66408933973082)\n('Success', True)\n('Final position', array([ 2.30430639, -0.35902507,  0.23911439,  0.94995806]))\n('Final distance to world2', 0.50000000000021738)\n('Final speed', 0.98010000000194009)\n('Fuel consumption', 18.109376635697373)\n", 
+            "output": "('Success', True)\n('Final position', array([ 2.00472107,  0.03918241,  0.95589028, -0.21417234]))\n('Final distance to world2', 0.50000000000017331)\n('Final speed', 0.98010000000092679)\n('Fuel consumption', 10.751850649836763)\n('Success', True)\n('Final position', array([ 2.2595266 , -0.33723283,  0.35878127,  0.91152181]))\n('Final distance to world2', 0.50000000000005262)\n('Final speed', 0.98010000000024944)\n('Fuel consumption', 44.832634940089008)\n('Success', True)\n('Final position', array([ 2.07277045,  0.3578273 ,  0.83464021, -0.5128077 ]))\n('Final distance to world2', 0.50000000002824685)\n('Final speed', 0.98010000000225062)\n('Fuel consumption', 9.9638858176604188)\n('Success', True)\n('Final position', array([ 2.30434107, -0.35903985,  0.23907098,  0.94996899]))\n('Final distance to world2', 0.50000000000034517)\n('Final speed', 0.98010000000187236)\n('Fuel consumption', 18.109376636522079)\n", 
             "score": 1, 
             "max_score": 1, 
             "name": "Run a few trajectory optimizations once, and persist the output"
@@ -13,8 +13,7 @@
             "name": "Check that the system approximately obeys the original dynamics"
         }, 
         {
-            "output": "Test Failed: One of the tested trajectories caused the rocket to run out of fuel when testing                     x0 = [-2.   0.5 -0.4  0. ]\n", 
-            "score": 0.0, 
+            "score": 4, 
             "max_score": 4, 
             "name": "Check that the trajectory was reasonably efficient with fuel use"
         }, 
@@ -29,7 +28,7 @@
             "name": "Check that the original parameters have not been changed"
         }, 
         {
-            "output": "test1\n[ 2.00472467  0.03915305]\n0.249\ntest2\n0.000999999999516\ntest1\n[ 2.25948594 -0.33721046]\n0.249000000002\ntest2\n0.000999999998446\ntest1\n[ 2.01310719 -0.0092492 ]\n0.249\ntest2\n0.000999999999793\ntest1\n[ 2.30430639 -0.35902507]\n0.249\ntest2\n0.000999999999783\n", 
+            "output": "test1\n[ 2.00472107  0.03918241]\n0.249\ntest2\n0.000999999999827\ntest1\n[ 2.2595266  -0.33723283]\n0.249\ntest2\n0.000999999999947\ntest1\n[ 2.07277045  0.3578273 ]\n0.249000000028\ntest2\n0.000999999971753\ntest1\n[ 2.30434107 -0.35903985]\n0.249\ntest2\n0.000999999999655\n", 
             "score": 10, 
             "max_score": 10, 
             "name": "Check that the trajectory satisfied the specified 'orbit' constraint"
@@ -61,6 +60,6 @@
             "name": "Verify the signature of ChooseThighTorque"
         }
     ], 
-    "score": 51.0, 
+    "score": 55, 
     "leaderboard": []
 }
