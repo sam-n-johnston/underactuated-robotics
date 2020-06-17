@@ -120,6 +120,11 @@ class TestSetFour_OrbitalTransfer(unittest.TestCase):
             final_position = traj[-1,0:2]
             world_2_position = rocket.world_2_position
 
+            print "test1"
+            print final_position
+            print ((final_position - world_2_position)**2).sum() 
+            print "test2"
+            print abs(((final_position - world_2_position)**2).sum() - 0.5**2)
             self.assertTrue( abs(((final_position - world_2_position)**2).sum() - 0.5**2) < .01, 
                 "Was not correct distance from second world when testing \
                     x0 = %s" % np.array_str(self.initial_states_for_testing[index]))

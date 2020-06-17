@@ -207,10 +207,13 @@ class OrbitalTransferRocket():
         
         mp = MathematicalProgram()
         
-        N = 50
+        max_speed = 0.99
+        desired_distance = 0.5
+        u_cost_factor = 10000.
+        N = 75
 #         trajectory = np.zeros((N+1,4))
 #         input_trajectory = np.ones((N,2))*10.0
-        time_used = 100.0
+        time_used = maximum_time # (maximum_time - minimum_time) / 2.
         time_step = time_used/(N+1)
         time_array = np.arange(0.0, time_used, time_step)
 
@@ -230,44 +233,61 @@ class OrbitalTransferRocket():
         # trajectory is N+1 in size
         x = mp.NewContinuousVariables(4, "x_%d" % (N+1))
         x_over_time = np.vstack((x_over_time, x))
-        
-        mp.AddQuadraticCost(1 * u_over_time[:,0].dot(u_over_time[:,0]))
-        mp.AddQuadraticCost(1 * u_over_time[:,1].dot(u_over_time[:,1]))
+
+        # Add cost
+#         for k in range(0, N):
+        mp.AddQuadraticCost(u_cost_factor * u_over_time[:, 0].dot(u_over_time[:, 0]))
+        mp.AddQuadraticCost(u_cost_factor * u_over_time[:, 1].dot(u_over_time[:, 1]))
         
         # Add constraint for initial state
-        mp.AddLinearConstraint(x_over_time[-1,0] >= state_initial[0])
-        mp.AddLinearConstraint(x_over_time[-1,0] <= state_initial[0])
-        mp.AddLinearConstraint(x_over_time[-1,1] >= state_initial[1])
-        mp.AddLinearConstraint(x_over_time[-1,1] <= state_initial[1])
-        mp.AddLinearConstraint(x_over_time[-1,2] >= state_initial[2])
-        mp.AddLinearConstraint(x_over_time[-1,2] <= state_initial[2])
-        mp.AddLinearConstraint(x_over_time[-1,3] >= state_initial[3])
-        mp.AddLinearConstraint(x_over_time[-1,3] <= state_initial[3])
+        mp.AddLinearConstraint(x_over_time[0,0] >= state_initial[0])
+        mp.AddLinearConstraint(x_over_time[0,0] <= state_initial[0])
+        mp.AddLinearConstraint(x_over_time[0,1] >= state_initial[1])
+        mp.AddLinearConstraint(x_over_time[0,1] <= state_initial[1])
+        mp.AddLinearConstraint(x_over_time[0,2] >= state_initial[2])
+        mp.AddLinearConstraint(x_over_time[0,2] <= state_initial[2])
+        mp.AddLinearConstraint(x_over_time[0,3] >= state_initial[3])
+        mp.AddLinearConstraint(x_over_time[0,3] <= state_initial[3])
 
         # Add constraint between x & u
-        k = 0
-        for k in range(1, N):
-            mp.AddLinearConstraint(x_over_time[N,0] <= x_over_time[N-1,0] + time_step*self.rocket_dynamics(x_over_time[N-1,:], u_over_time[N-1, :]))
-            mp.AddLinearConstraint(x_over_time[N,0] >= x_over_time[N-1,0] + time_step*self.rocket_dynamics(x_over_time[N-1,:], u_over_time[N-1, :]))
-            mp.AddLinearConstraint(x_over_time[N,1] <= x_over_time[N-1,1] + time_step*self.rocket_dynamics(x_over_time[N-1,:], u_over_time[N-1, :]))
-            mp.AddLinearConstraint(x_over_time[N,1] >= x_over_time[N-1,1] + time_step*self.rocket_dynamics(x_over_time[N-1,:], u_over_time[N-1, :]))
-            mp.AddLinearConstraint(x_over_time[N,2] <= x_over_time[N-1,2] + time_step*self.rocket_dynamics(x_over_time[N-1,:], u_over_time[N-1, :]))
-            mp.AddLinearConstraint(x_over_time[N,2] >= x_over_time[N-1,2] + time_step*self.rocket_dynamics(x_over_time[N-1,:], u_over_time[N-1, :]))
-            mp.AddLinearConstraint(x_over_time[N,3] <= x_over_time[N-1,3] + time_step*self.rocket_dynamics(x_over_time[N-1,:], u_over_time[N-1, :]))
-            mp.AddLinearConstraint(x_over_time[N,3] >= x_over_time[N-1,3] + time_step*self.rocket_dynamics(x_over_time[N-1,:], u_over_time[N-1, :]))
+        for k in range(1, N+1):
+            mp.AddConstraint(x_over_time[k,0] == x_over_time[k-1,0] + time_step*self.rocket_dynamics(x_over_time[k-1,:], u_over_time[k-1, :])[0])
+            mp.AddConstraint(x_over_time[k,1] == x_over_time[k-1,1] + time_step*self.rocket_dynamics(x_over_time[k-1,:], u_over_time[k-1, :])[1])
+            mp.AddConstraint(x_over_time[k,2] == x_over_time[k-1,2] + time_step*self.rocket_dynamics(x_over_time[k-1,:], u_over_time[k-1, :])[2])
+            mp.AddConstraint(x_over_time[k,2] == x_over_time[k-1,3] + time_step*self.rocket_dynamics(x_over_time[k-1,:], u_over_time[k-1, :])[3])
+            
+        # Make sure it never goes too far from the planets
+#         for k in range(1, N):
+#             mp.AddConstraint(self.two_norm(x_over_time[k,0:2] - self.world_2_position[:]) <= 10)
+#             mp.AddConstraint(self.two_norm(x_over_time[k,0:2] - self.world_1_position[:]) <= 10)
+            
+        # Make sure u never goes above a threshold
+#         max_u = 1.
+#         for k in range(0, N):
+#             mp.AddLinearConstraint(u_over_time[k,0] <= max_u)
+#             mp.AddLinearConstraint(-u_over_time[k,0] <= max_u)
+#             mp.AddLinearConstraint(u_over_time[k,1] <= max_u)
+#             mp.AddLinearConstraint(-u_over_time[k,1] <= max_u)
+            
+        # Make sure it reaches world 2
+        mp.AddConstraint(self.two_norm(x_over_time[-1,0:2] - self.world_2_position) <= desired_distance)
+        mp.AddConstraint(self.two_norm(x_over_time[-1,0:2] - self.world_2_position) >= desired_distance)
         
-        world_1_position = self.world_1_position; world_2_position = self.world_2_position;
-        mp.AddLinearConstraint(x_over_time[-1,0] <= self.world_2_position[0])
-        mp.AddLinearConstraint(x_over_time[-1,0] >= self.world_2_position[0])
-        mp.AddLinearConstraint(x_over_time[-1,1] <= self.world_2_position[1])
-        mp.AddLinearConstraint(x_over_time[-1,1] >= self.world_2_position[1])
-        mp.AddLinearConstraint(x_over_time[-1,2] <= self.world_2_position[2])
-        mp.AddLinearConstraint(x_over_time[-1,2] >= self.world_2_position[2])
-        mp.AddLinearConstraint(x_over_time[-1,3] <= self.world_2_position[3])
-        mp.AddLinearConstraint(x_over_time[-1,3] >= self.world_2_position[3])
+        # Make sure it's speed isn't too high
+        mp.AddConstraint(self.two_norm(x_over_time[-1,2:4]) <= max_speed ** 2.)
 
-        trajectory = x_over_time
-        input_trajectory = u_over_time
+        # Get result
+        result = Solve(mp)
+        x_over_time_result = result.GetSolution(x_over_time)
+        u_over_time_result = result.GetSolution(u_over_time)
+        print("Success", result.is_success())
+        print("Final position", x_over_time_result[-1, :])
+        print("Final distance to world2", self.two_norm(x_over_time_result[-1,0:2] - self.world_2_position))
+        print("Fuel consumption", (u_over_time_result**2.).sum())
+#         print("Fuel consumption", u_over_time_result**2.)
+        
+        trajectory = x_over_time_result
+        input_trajectory = u_over_time_result
         return trajectory, input_trajectory, time_array
 
         
