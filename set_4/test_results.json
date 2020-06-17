@@ -1,20 +1,19 @@
 {
-    "execution_time": "10.17", 
+    "execution_time": "11.42", 
     "tests": [
         {
-            "output": "('Success', True)\n('Final position', array([ 2.23568667,  0.52324752, -0.97958972,  0.        ]))\n('Final distance to world2', 0.50000000005165901)\n('Fuel consumption', 372.30624163841298)\n('Success', True)\n('Final position', array([ 2.23161153,  0.52067521, -0.97958972,  0.        ]))\n('Final distance to world2', 0.50000000000217948)\n('Fuel consumption', 616.22665604233748)\n('Success', True)\n('Final position', array([ 2.2325871 ,  0.52129602, -0.97958972,  0.        ]))\n('Final distance to world2', 0.50000000000845657)\n('Fuel consumption', 354.55401475249795)\n('Success', True)\n('Final position', array([ 2.23065037,  0.52006045, -0.97958972,  0.        ]))\n('Final distance to world2', 0.50000000000552636)\n('Fuel consumption', 296.80638752323614)\n", 
+            "output": "('Success', True)\n('Final position', array([ 2.00472467,  0.03915305,  0.95590137, -0.21412281]))\n('Final distance to world2', 0.50000000000048428)\n('Final speed', 0.98010000000637865)\n('Fuel consumption', 10.751850653271079)\n('Success', True)\n('Final position', array([ 2.25948594, -0.33721046,  0.35882647,  0.91150402]))\n('Final distance to world2', 0.50000000000155431)\n('Final speed', 0.98010000008110687)\n('Fuel consumption', 44.832634944920201)\n('Success', True)\n('Final position', array([ 2.01310719, -0.0092492 ,  0.87833768,  0.43372679]))\n('Final distance to world2', 0.50000000000020661)\n('Final speed', 0.98010000004247211)\n('Fuel consumption', 116.66408933973082)\n('Success', True)\n('Final position', array([ 2.30430639, -0.35902507,  0.23911439,  0.94995806]))\n('Final distance to world2', 0.50000000000021738)\n('Final speed', 0.98010000000194009)\n('Fuel consumption', 18.109376635697373)\n", 
             "score": 1, 
             "max_score": 1, 
             "name": "Run a few trajectory optimizations once, and persist the output"
         }, 
         {
-            "output": "Test Failed: The trajectory, input_trajectory, and time_array have been                     computed to not be consistent with out euler integration when testing                     x0 = [-2.   0.4 -0.1  3. ]\n", 
-            "score": 0.0, 
+            "score": 4, 
             "max_score": 4, 
             "name": "Check that the system approximately obeys the original dynamics"
         }, 
         {
-            "output": "Test Failed: One of the tested trajectories caused the rocket to run out of fuel when testing                     x0 = [-2.   0.4 -0.1  3. ]\n", 
+            "output": "Test Failed: One of the tested trajectories caused the rocket to run out of fuel when testing                     x0 = [-2.   0.5 -0.4  0. ]\n", 
             "score": 0.0, 
             "max_score": 4, 
             "name": "Check that the trajectory was reasonably efficient with fuel use"
@@ -30,7 +29,7 @@
             "name": "Check that the original parameters have not been changed"
         }, 
         {
-            "output": "test1\n[ 2.23568667  0.52324752]\n0.249000000052\ntest2\n0.000999999948341\ntest1\n[ 2.23161153  0.52067521]\n0.249000000002\ntest2\n0.000999999997821\ntest1\n[ 2.2325871   0.52129602]\n0.249000000008\ntest2\n0.000999999991543\ntest1\n[ 2.23065037  0.52006045]\n0.249000000006\ntest2\n0.000999999994474\n", 
+            "output": "test1\n[ 2.00472467  0.03915305]\n0.249\ntest2\n0.000999999999516\ntest1\n[ 2.25948594 -0.33721046]\n0.249000000002\ntest2\n0.000999999998446\ntest1\n[ 2.01310719 -0.0092492 ]\n0.249\ntest2\n0.000999999999793\ntest1\n[ 2.30430639 -0.35902507]\n0.249\ntest2\n0.000999999999783\n", 
             "score": 10, 
             "max_score": 10, 
             "name": "Check that the trajectory satisfied the specified 'orbit' constraint"
@@ -62,6 +61,6 @@
             "name": "Verify the signature of ChooseThighTorque"
         }
     ], 
-    "score": 47.0, 
+    "score": 51.0, 
     "leaderboard": []
 }

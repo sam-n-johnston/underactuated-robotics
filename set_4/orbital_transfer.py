@@ -209,11 +209,11 @@ class OrbitalTransferRocket():
         
         max_speed = 0.99
         desired_distance = 0.5
-        u_cost_factor = 10000.
-        N = 75
+        u_cost_factor = 100.
+        N = 50
 #         trajectory = np.zeros((N+1,4))
 #         input_trajectory = np.ones((N,2))*10.0
-        time_used = maximum_time # (maximum_time - minimum_time) / 2.
+        time_used = (maximum_time + minimum_time) / 2.
         time_step = time_used/(N+1)
         time_array = np.arange(0.0, time_used, time_step)
 
@@ -251,10 +251,15 @@ class OrbitalTransferRocket():
 
         # Add constraint between x & u
         for k in range(1, N+1):
-            mp.AddConstraint(x_over_time[k,0] == x_over_time[k-1,0] + time_step*self.rocket_dynamics(x_over_time[k-1,:], u_over_time[k-1, :])[0])
-            mp.AddConstraint(x_over_time[k,1] == x_over_time[k-1,1] + time_step*self.rocket_dynamics(x_over_time[k-1,:], u_over_time[k-1, :])[1])
-            mp.AddConstraint(x_over_time[k,2] == x_over_time[k-1,2] + time_step*self.rocket_dynamics(x_over_time[k-1,:], u_over_time[k-1, :])[2])
-            mp.AddConstraint(x_over_time[k,2] == x_over_time[k-1,3] + time_step*self.rocket_dynamics(x_over_time[k-1,:], u_over_time[k-1, :])[3])
+            next_step = self.rocket_dynamics(x_over_time[k-1,:], u_over_time[k-1, :])
+            mp.AddConstraint(x_over_time[k,0] == x_over_time[k-1,0] + time_step*next_step[0])
+            mp.AddConstraint(x_over_time[k,1] == x_over_time[k-1,1] + time_step*next_step[1])
+            mp.AddConstraint(x_over_time[k,2] == x_over_time[k-1,2] + time_step*next_step[2])
+            mp.AddConstraint(x_over_time[k,3] == x_over_time[k-1,3] + time_step*next_step[3])
+#             mp.AddConstraint(self.two_norm(x_over_time[k,:] - x_over_time[k-1,:] + time_step*next_step) <= 0.001)
+#             mp.AddConstraint(self.two_norm(x_over_time[k,1] - x_over_time[k-1,1] + time_step*next_step[1]) <= 0)
+#             mp.AddConstraint(self.two_norm(x_over_time[k,2] - x_over_time[k-1,2] + time_step*next_step[2]) <= 0)
+#             mp.AddConstraint(self.two_norm(x_over_time[k,3] - x_over_time[k-1,3] + time_step*next_step[3]) <= 0)
             
         # Make sure it never goes too far from the planets
 #         for k in range(1, N):
@@ -283,8 +288,8 @@ class OrbitalTransferRocket():
         print("Success", result.is_success())
         print("Final position", x_over_time_result[-1, :])
         print("Final distance to world2", self.two_norm(x_over_time_result[-1,0:2] - self.world_2_position))
+        print("Final speed", self.two_norm(x_over_time_result[-1,2:4]))
         print("Fuel consumption", (u_over_time_result**2.).sum())
-#         print("Fuel consumption", u_over_time_result**2.)
         
         trajectory = x_over_time_result
         input_trajectory = u_over_time_result
