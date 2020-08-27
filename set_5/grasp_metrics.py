@@ -40,10 +40,34 @@ def achieves_force_closure(points, normals, mu):
     """
     assert len(points) == len(normals)
     assert mu >= 0.0
+    
+    print('testing')
+    print(len(points))
 
-    ## YOUR CODE HERE
-    # print("Not yet implemeted!")
-    return False
+    from pydrake.all import MathematicalProgram, Solve, eq
+    mp = MathematicalProgram()
+
+    forces = mp.NewContinuousVariables(2 * len(points), "forces")
+
+    g = get_G(points, normals)
+    mp.AddLinearEqualityConstraint(g, np.zeros((3, 1)), forces)
+    
+    for i in range(len(points)):
+        mp.AddLinearConstraint(mu * forces[i+1] >= forces[i])
+        mp.AddLinearConstraint(mu * forces[i+1] >= -forces[i])
+        mp.AddLinearConstraint(forces[i+1] >= 0.0000001)
+
+    something = g.dot(forces)
+    
+    mp.AddQuadraticCost(something.dot(something))
+    result = Solve(mp)
+    solution = result.GetSolution(forces)
+
+    print('result')
+    print(solution)
+    print(g.dot(solution))
+    
+    return result.is_success()
 
 def compute_convex_hull_volume(points):
     """
