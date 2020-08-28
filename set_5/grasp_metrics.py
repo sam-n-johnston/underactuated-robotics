@@ -41,33 +41,47 @@ def achieves_force_closure(points, normals, mu):
     assert len(points) == len(normals)
     assert mu >= 0.0
     
-    print('testing')
-    print(len(points))
+    print('Number of Points: ' + str(len(points)))
 
-    from pydrake.all import MathematicalProgram, Solve, eq
+    from pydrake.all import MathematicalProgram, Solve
     mp = MathematicalProgram()
 
     forces = mp.NewContinuousVariables(2 * len(points), "forces")
+    y = mp.NewContinuousVariables(1, "y")
 
     g = get_G(points, normals)
-    mp.AddLinearEqualityConstraint(g, np.zeros((3, 1)), forces)
-    
+    print('Is Full Row Rank? => ' + str(is_full_row_rank(g)))
+    if(not is_full_row_rank(g)):
+        return False
+
+    w = g.dot(forces)
+
+    mp.AddLinearConstraint(w[0] == 0)
+    mp.AddLinearConstraint(w[1] == 0)
+    mp.AddLinearConstraint(w[2] == 0)
+#     mp.AddLinearEqualityConstraint(g, np.zeros((3, 1)), forces)
+
+    mp.AddLinearConstraint(y[0] >= -1)
+    mp.AddLinearConstraint(y[0] <= 0)
+
     for i in range(len(points)):
-        mp.AddLinearConstraint(mu * forces[i+1] >= forces[i])
-        mp.AddLinearConstraint(mu * forces[i+1] >= -forces[i])
-        mp.AddLinearConstraint(forces[i+1] >= 0.0000001)
+        mp.AddLinearConstraint(mu * forces[2*i+1] >= forces[2*i])
+        mp.AddLinearConstraint(mu * forces[2*i+1] >= -forces[2*i])
+        mp.AddLinearConstraint(forces[2*i+1] >= -y[0])
 
-    something = g.dot(forces)
-    
-    mp.AddQuadraticCost(something.dot(something))
+    mp.AddLinearCost(y[0])
     result = Solve(mp)
-    solution = result.GetSolution(forces)
+    forces_solution = result.GetSolution(forces)
+    y_solution = result.GetSolution(y)
 
-    print('result')
-    print(solution)
-    print(g.dot(solution))
+    print('forces_solution: ' + str(forces_solution))
+    print('w: ' + str(g.dot(forces_solution)))
+    print('y_solution: ' + str(y_solution))
     
-    return result.is_success()
+    if y_solution == 0:
+        return False
+    else:
+        return True
 
 def compute_convex_hull_volume(points):
     """
