@@ -41,7 +41,7 @@ def achieves_force_closure(points, normals, mu):
     assert len(points) == len(normals)
     assert mu >= 0.0
     
-    print('Number of Points: ' + str(len(points)))
+    # print('Number of Points: ' + str(len(points)))
 
     from pydrake.all import MathematicalProgram, Solve
     mp = MathematicalProgram()
@@ -50,7 +50,7 @@ def achieves_force_closure(points, normals, mu):
     y = mp.NewContinuousVariables(1, "y")
 
     g = get_G(points, normals)
-    print('Is Full Row Rank? => ' + str(is_full_row_rank(g)))
+    # print('Is Full Row Rank? => ' + str(is_full_row_rank(g)))
     if(not is_full_row_rank(g)):
         return False
 
@@ -74,9 +74,9 @@ def achieves_force_closure(points, normals, mu):
     forces_solution = result.GetSolution(forces)
     y_solution = result.GetSolution(y)
 
-    print('forces_solution: ' + str(forces_solution))
-    print('w: ' + str(g.dot(forces_solution)))
-    print('y_solution: ' + str(y_solution))
+    # print('forces_solution: ' + str(forces_solution))
+    # print('w: ' + str(g.dot(forces_solution)))
+    # print('y_solution: ' + str(y_solution))
     
     if y_solution == 0:
         return False

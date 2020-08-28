@@ -1,15 +1,13 @@
 {
-    "execution_time": "4.99", 
+    "execution_time": "9.52", 
     "tests": [
         {
-            "output": "Test Failed: This means that one of simple force closure checks failed \n", 
-            "score": 0.0, 
+            "score": 5, 
             "max_score": 5, 
             "name": "Test force closure metric on some predefined grasps"
         }, 
         {
-            "output": "Test Failed: These many grasp points should achieve force closure since One of them was chosen to be directly antipoldal. \n", 
-            "score": 0.0, 
+            "score": 10, 
             "max_score": 10, 
             "name": "Test force closure metric on some random grasps"
         }, 
@@ -44,6 +42,6 @@
             "name": "Test three finger grip of the triangle under motion B."
         }
     ], 
-    "score": 0.0, 
+    "score": 15.0, 
     "leaderboard": []
 }
