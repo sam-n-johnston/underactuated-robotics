@@ -7,6 +7,7 @@ from matplotlib.patches import Circle
 from matplotlib.patches import Polygon
 import matplotlib.pyplot as plt
 
+from scipy.spatial import ConvexHull
 
 def achieves_force_closure(points, normals, mu):
     """
@@ -89,8 +90,10 @@ def compute_convex_hull_volume(points):
 
     :param points: See achieves_force_closure() for documentation.
     """
-    ## YOUR CODE HERE
-    return -1.0
+    if(len(points) == 2):
+        return 0
+    hull = ConvexHull(points)
+    return hull.volume
 
 def get_G(points, normals):
     """
