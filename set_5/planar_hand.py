@@ -490,11 +490,30 @@ class HandController(LeafSystem):
         # From here, it's up to you. Following the guidelines in the problem
         # set, implement a controller to achieve the specified goals.
 
-        '''
-        YOUR CODE HERE
-        '''
+        kd = 1
+        kp = 10000
+
+        from pydrake.all import MathematicalProgram, Solve
+        mp = MathematicalProgram()
+
+        u = mp.NewContinuousVariables(self.nu, "u")
+        qdd = mp.NewContinuousVariables(self.nq, "qdd")
+
+        leftHandSide = M.dot(qdd) + C
+        rightHandSide = B.dot(u)
+
+        for i in range(len(leftHandSide)):
+            mp.AddConstraint(leftHandSide[i] == rightHandSide[i])
+
+        proportionalCost = np.linalg.norm(qdes - q)
+        diffCost = 0 # np.linalg.norm(0 - v)
+        print('Cost' + str(proportionalCost))
+        # print('qdes' + str(qdes - q))
+        mp.AddQuadraticCost(kp * proportionalCost * proportionalCost + kd * diffCost * diffCost)
+        result = Solve(mp)
+        u_solution = result.GetSolution(u)
         u = np.zeros(self.nu)
-        return u
+        return u_solution
 
     ''' This is called on every discrete state update (at the
         specified control period), and expects the discrete state
