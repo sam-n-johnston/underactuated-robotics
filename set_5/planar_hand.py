@@ -493,8 +493,8 @@ class HandController(LeafSystem):
         # From here, it's up to you. Following the guidelines in the problem
         # set, implement a controller to achieve the specified goals.
 
-        kd = 100000
-        kp = 100000
+        kd = 1000000
+        kp = 1
 
         from pydrake.all import MathematicalProgram, Solve
         mp = MathematicalProgram()
@@ -508,17 +508,18 @@ class HandController(LeafSystem):
         for i in range(len(leftHandSide)):
             mp.AddConstraint(leftHandSide[i] == rightHandSide[i])
 
-        next_tick_qd = v + qdd * 0.0333
-        next_tick_q = v + next_tick_qd * 0.0333
+        next_tick_qd = v + qdd # * 0.0333
+        next_tick_q = q + next_tick_qd # * 0.0333
 
         q_error = qdes - next_tick_q
         proportionalCost = q_error.dot(np.transpose(q_error))
-        diffCost = next_tick_qd.dot(np.transpose(next_tick_qd))
+        qd_error = 0 - next_tick_qd
+        diffCost = qd_error.dot(np.transpose(qd_error))
         # print('Cost' + str(diffCost))
         mp.AddQuadraticCost(kp * proportionalCost + kd * diffCost)
         result = Solve(mp)
         u_solution = result.GetSolution(u)
-        print('u_solution' + str(u_solution))
+        # print('u_solution' + str(u_solution))
 
         u = np.zeros(self.nu)
         return u_solution
