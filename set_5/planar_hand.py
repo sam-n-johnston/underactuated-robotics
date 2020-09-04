@@ -493,8 +493,8 @@ class HandController(LeafSystem):
         # From here, it's up to you. Following the guidelines in the problem
         # set, implement a controller to achieve the specified goals.
 
-        kd = 1000000
-        kp = 1
+        kd = 1
+        kp = 10
 
         from pydrake.all import MathematicalProgram, Solve
         mp = MathematicalProgram()
