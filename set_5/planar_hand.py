@@ -90,6 +90,7 @@ class HandController(LeafSystem):
         self.print_period = print_period
         self.last_print_time = -print_period
         self.shut_up = False
+        self.control_period = control_period # I added this, probably I don't have the right
 
         self.DeclareInputPort(PortDataType.kVectorValued,
                                hand.get_num_positions() +
@@ -508,8 +509,9 @@ class HandController(LeafSystem):
         for i in range(len(leftHandSide)):
             mp.AddConstraint(leftHandSide[i] == rightHandSide[i])
 
-        next_tick_qd = v + qdd # * 0.0333
-        next_tick_q = q + next_tick_qd # * 0.0333
+        # Copying the control period of the constructor. Probably not supposed to do this...
+        next_tick_qd = v + qdd * self.control_period
+        next_tick_q = q + next_tick_qd * self.control_period
 
         q_error = qdes - next_tick_q
         proportionalCost = q_error.dot(np.transpose(q_error))
