@@ -471,6 +471,7 @@ class HandController(LeafSystem):
         # (the combined effects of lambda on the robot).
         # The list of grasp points, in manipuland frame, that we'll use.
         n_cf = len(self.grasp_points)
+        number_of_grasp_points = len(self.grasp_points)
         # The evaluated desired manipuland posture.
         manipuland_qdes = self.GetDesiredObjectPosition(t)
 
@@ -502,12 +503,53 @@ class HandController(LeafSystem):
 
         u = mp.NewContinuousVariables(self.nu, "u")
         qdd = mp.NewContinuousVariables(self.nq, "qdd")
+        x_y_dimensions = 2
+        # For number_of_grasp_points
+        lambda_variable1 = mp.NewContinuousVariables(x_y_dimensions, "lambda_variable1")
+        lambda_variable2 = mp.NewContinuousVariables(x_y_dimensions, "lambda_variable2")
+
+        # For number_of_grasp_points
+        forces_1 = np.transpose(J_contact)[:,:,0].dot(lambda_variable1)
+        forces_2 = np.transpose(J_contact)[:,:,1].dot(lambda_variable2)
 
         leftHandSide = M.dot(qdd) + C
-        rightHandSide = B.dot(u)
+        # For number_of_grasp_points
+        rightHandSide = B.dot(u) + forces_1 + forces_2
 
         for i in range(len(leftHandSide)):
             mp.AddConstraint(leftHandSide[i] == rightHandSide[i])
+
+        # Calculate normals n_i
+        n1 = grasp_normals_world_now[0:2, 0]
+        n2 = grasp_normals_world_now[0:2, 1]
+
+        # Calculate tangeants t_i
+        t1 = np.array([n1[1], -n1[0]])
+        t2 = np.array([n2[1], -n2[0]])
+
+        # Create beta variables
+        b0 = mp.NewContinuousVariables(2, "b0")
+        b1 = mp.NewContinuousVariables(2, "b1")
+
+        # Grasp 1
+        c00 = n1 - self.mu * t1
+        c01 = n1 + self.mu * t1
+        right_hand_lambda1 = c00 * b0[0] + c01 * b0[1]
+        mp.AddConstraint(lambda_variable1[0] == right_hand_lambda1[0])
+        mp.AddConstraint(lambda_variable1[1] == right_hand_lambda1[1])
+        mp.AddConstraint(b0[0] >= 0)
+        mp.AddConstraint(b0[1] >= 0)
+        mp.AddConstraint(n1.dot(lambda_variable1) >= 2.0)
+
+        # Grasp 2
+        c10 = n2 - self.mu * t2
+        c11 = n2 + self.mu * t2
+        right_hand_lambda2 = c10 * b1[0] + c11 * b1[1]
+        mp.AddConstraint(lambda_variable2[0] == right_hand_lambda2[0])
+        mp.AddConstraint(lambda_variable2[1] == right_hand_lambda2[1])
+        mp.AddConstraint(b1[0] >= 0)
+        mp.AddConstraint(b1[1] >= 0)
+        mp.AddConstraint(n2.dot(lambda_variable2) >= 2.0)
 
         # Copying the control period of the constructor. Probably not supposed to do this...
         next_tick_qd = v + qdd * self.control_period
