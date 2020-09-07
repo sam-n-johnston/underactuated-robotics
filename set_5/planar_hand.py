@@ -542,7 +542,7 @@ class HandController(LeafSystem):
             mp.AddConstraint(lambda_variable[1, i] == right_hand_lambda1[1])
             mp.AddConstraint(beta[0, i] >= 0)
             mp.AddConstraint(beta[1, i] >= 0)
-            mp.AddConstraint(normals[i].dot(lambda_variable[:, i]) >= 1.0)
+            mp.AddConstraint(normals[i].dot(lambda_variable[:, i]) >= 0.25)
 
         # Copying the control period of the constructor. Probably not supposed to do this...
         next_tick_qd = v + qdd * self.control_period
