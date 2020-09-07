@@ -1,5 +1,5 @@
 {
-    "execution_time": "6.47", 
+    "execution_time": "13.97", 
     "tests": [
         {
             "score": 5, 
@@ -22,24 +22,24 @@
             "name": "Tests the convex hull volume is correctly computed on a small sample set"
         }, 
         {
-            "output": "t:  0.0\nt:  1.0015\nt:  2.003\nt:  3.0045\nt:  4.006\nt:  5.0075\nt:  6.009\nt:  7.0105\nt:  8.012\nt:  9.0135\nTest Failed: The final pose error was greater than 0.25 in at least one dimension: goal [1.500000,0.499724,0.499724], target [1.583440,0.551335,0.154866].\n", 
-            "score": 0.0, 
+            "output": "t:  0.0\nt:  1.0015\nt:  2.003\nt:  3.0045\nt:  4.006\nt:  5.0075\nt:  6.009\nt:  7.0105\nt:  8.012\nt:  9.0135\n", 
+            "score": 10, 
             "max_score": 10, 
             "name": "Test two finger grip of the box under motion A."
         }, 
         {
-            "output": "Test Failed: shapes (15,4) and (2,) not aligned: 4 (dim 1) != 2 (dim 0)\n", 
+            "output": "t:  0.0\nt:  1.0015\nt:  2.003\nt:  3.0045\nt:  4.006\nt:  5.0075\nt:  6.009\nt:  7.0105\nt:  8.012\nt:  9.0135\nTest Failed: The final pose error was greater than 0.25 in at least one dimension: goal [1.000276,0.500000,0.000000], target [1.010244,0.497798,0.433539].\n", 
             "score": 0.0, 
             "max_score": 10, 
             "name": "Test four finger grip of the large ball under motion C."
         }, 
         {
-            "output": "Test Failed: shapes (12,3) and (2,) not aligned: 3 (dim 1) != 2 (dim 0)\n", 
-            "score": 0.0, 
+            "output": "t:  0.0\nt:  1.0015\nt:  2.003\nt:  3.0045\nt:  4.006\nt:  5.0075\nt:  6.009\nt:  7.0105\nt:  8.012\nt:  9.0135\n", 
+            "score": 10, 
             "max_score": 10, 
             "name": "Test three finger grip of the triangle under motion B."
         }
     ], 
-    "score": 25.0, 
+    "score": 45.0, 
     "leaderboard": []
 }

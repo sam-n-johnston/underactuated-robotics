@@ -504,52 +504,45 @@ class HandController(LeafSystem):
         u = mp.NewContinuousVariables(self.nu, "u")
         qdd = mp.NewContinuousVariables(self.nq, "qdd")
         x_y_dimensions = 2
-        # For number_of_grasp_points
-        lambda_variable1 = mp.NewContinuousVariables(x_y_dimensions, "lambda_variable1")
-        lambda_variable2 = mp.NewContinuousVariables(x_y_dimensions, "lambda_variable2")
 
-        # For number_of_grasp_points
-        forces_1 = np.transpose(J_contact)[:,:,0].dot(lambda_variable1)
-        forces_2 = np.transpose(J_contact)[:,:,1].dot(lambda_variable2)
+        lambda_variable = mp.NewContinuousVariables(x_y_dimensions, number_of_grasp_points, "lambda_variable")
+
+        forces = np.zeros((self.nq))
+        for i in range(number_of_grasp_points):
+            current_forces = np.transpose(J_contact)[:,i,:].dot(lambda_variable[:,i])
+            forces = forces + current_forces
 
         leftHandSide = M.dot(qdd) + C
-        # For number_of_grasp_points
-        rightHandSide = B.dot(u) + forces_1 + forces_2
+        rightHandSide = B.dot(u) + forces
 
         for i in range(len(leftHandSide)):
             mp.AddConstraint(leftHandSide[i] == rightHandSide[i])
 
-        # Calculate normals n_i
-        n1 = grasp_normals_world_now[0:2, 0]
-        n2 = grasp_normals_world_now[0:2, 1]
+        # Calculate Normals
+        normals = np.array([])
+        for i in range(number_of_grasp_points):
+            current_grasp_normal = grasp_normals_world_now[0:2, i]
+            normals = np.vstack((normals, current_grasp_normal)) if normals.size else current_grasp_normal
 
-        # Calculate tangeants t_i
-        t1 = np.array([n1[1], -n1[0]])
-        t2 = np.array([n2[1], -n2[0]])
+        # Calculate Tangeants
+        tangeants = np.array([])
+        for i in range(number_of_grasp_points):
+            current_grasp_tangeant = np.array([normals[i, 1], -normals[i, 0]])
+            tangeants = np.vstack((tangeants, current_grasp_tangeant)) if tangeants.size else current_grasp_tangeant
 
         # Create beta variables
-        b0 = mp.NewContinuousVariables(2, "b0")
-        b1 = mp.NewContinuousVariables(2, "b1")
+        beta = mp.NewContinuousVariables(2, number_of_grasp_points, "b0")
 
-        # Grasp 1
-        c00 = n1 - self.mu * t1
-        c01 = n1 + self.mu * t1
-        right_hand_lambda1 = c00 * b0[0] + c01 * b0[1]
-        mp.AddConstraint(lambda_variable1[0] == right_hand_lambda1[0])
-        mp.AddConstraint(lambda_variable1[1] == right_hand_lambda1[1])
-        mp.AddConstraint(b0[0] >= 0)
-        mp.AddConstraint(b0[1] >= 0)
-        mp.AddConstraint(n1.dot(lambda_variable1) >= 1.0)
-
-        # Grasp 2
-        c10 = n2 - self.mu * t2
-        c11 = n2 + self.mu * t2
-        right_hand_lambda2 = c10 * b1[0] + c11 * b1[1]
-        mp.AddConstraint(lambda_variable2[0] == right_hand_lambda2[0])
-        mp.AddConstraint(lambda_variable2[1] == right_hand_lambda2[1])
-        mp.AddConstraint(b1[0] >= 0)
-        mp.AddConstraint(b1[1] >= 0)
-        mp.AddConstraint(n2.dot(lambda_variable2) >= 1.0)
+        # Create Grasps
+        for i in range(number_of_grasp_points):
+            c0 = normals[i] - self.mu * tangeants[i]
+            c1 = normals[i] + self.mu * tangeants[i]
+            right_hand_lambda1 = c0 * beta[0, i] + c1 * beta[1, i]
+            mp.AddConstraint(lambda_variable[0, i] == right_hand_lambda1[0])
+            mp.AddConstraint(lambda_variable[1, i] == right_hand_lambda1[1])
+            mp.AddConstraint(beta[0, i] >= 0)
+            mp.AddConstraint(beta[1, i] >= 0)
+            mp.AddConstraint(normals[i].dot(lambda_variable[:, i]) >= 1.0)
 
         # Copying the control period of the constructor. Probably not supposed to do this...
         next_tick_qd = v + qdd * self.control_period
@@ -559,11 +552,9 @@ class HandController(LeafSystem):
         proportionalCost = q_error.dot(np.transpose(q_error))
         qd_error = 0 - next_tick_qd
         diffCost = qd_error.dot(np.transpose(qd_error))
-        # print('Cost' + str(diffCost))
         mp.AddQuadraticCost(kp * proportionalCost + kd * diffCost)
         result = Solve(mp)
         u_solution = result.GetSolution(u)
-        # print('u_solution' + str(u_solution))
 
         u = np.zeros(self.nu)
         return u_solution
