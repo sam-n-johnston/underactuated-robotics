@@ -496,7 +496,7 @@ class HandController(LeafSystem):
         # set, implement a controller to achieve the specified goals.
 
         kd = 1
-        kp = 10
+        kp = 25
 
         from pydrake.all import MathematicalProgram, Solve
         mp = MathematicalProgram()
@@ -539,7 +539,7 @@ class HandController(LeafSystem):
         mp.AddConstraint(lambda_variable1[1] == right_hand_lambda1[1])
         mp.AddConstraint(b0[0] >= 0)
         mp.AddConstraint(b0[1] >= 0)
-        mp.AddConstraint(n1.dot(lambda_variable1) >= 2.0)
+        mp.AddConstraint(n1.dot(lambda_variable1) >= 1.0)
 
         # Grasp 2
         c10 = n2 - self.mu * t2
@@ -549,7 +549,7 @@ class HandController(LeafSystem):
         mp.AddConstraint(lambda_variable2[1] == right_hand_lambda2[1])
         mp.AddConstraint(b1[0] >= 0)
         mp.AddConstraint(b1[1] >= 0)
-        mp.AddConstraint(n2.dot(lambda_variable2) >= 2.0)
+        mp.AddConstraint(n2.dot(lambda_variable2) >= 1.0)
 
         # Copying the control period of the constructor. Probably not supposed to do this...
         next_tick_qd = v + qdd * self.control_period
