@@ -27,3 +27,4 @@ How can I increase the complexity of this project?
 
 Other phases of things I could do later:
 - Create the robot in the real world
+- Can we create a DNN to improve simulation speed? Specifically with contact?
