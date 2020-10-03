@@ -70,6 +70,17 @@ class Hopper2dController(VectorSystem):
         # This is an arbitrary choice of spring constant for the leg.
         self.K_l = 100
         self.desired_alpha_array = []
+
+    def calculate_apex_xd_based_off_liftoff_plus(self, lift_off_plus_state):
+        return lift_off_plus_state[0+5]
+
+    def calculate_apex_z_based_off_liftoff_plus(self, lift_off_plus_state):
+        g = 9.81
+        lift_off_zd = lift_off_plus_state[1+5]
+        print('lift_off_zd')
+        print(lift_off_zd)
+        apex_z = lift_off_zd ** 2 / (2 * g)
+        return apex_z + lift_off_plus_state[1]
          
     def calculate_moment_of_inertia(self):
         return self.m_f * self.l_max ** 2.
@@ -271,7 +282,7 @@ def Simulate2dHopper(x0, duration,
     state_dim = plant.num_positions() + plant.num_velocities()
     state_log = builder.AddSystem(SignalLogger(state_dim))
     state_log.DeclarePeriodicPublish(0.0333, 0.0) # 30hz logging
-    builder.Connect(plant.get_continuous_state_output_port(), state_log.get_input_port(0))
+    builder.Connect(plant.get_state_output_port(), state_log.get_input_port(0))
     
     sams_controller = Hopper2dController(plant,
             desired_lateral_velocity = desired_lateral_velocity,
@@ -280,9 +291,9 @@ def Simulate2dHopper(x0, duration,
 
     # The controller
     controller = builder.AddSystem(sams_controller)
-    builder.Connect(plant.get_continuous_state_output_port(), controller.get_input_port(0))
+    builder.Connect(plant.get_state_output_port(), controller.get_input_port(0))
     builder.Connect(controller.get_output_port(0), plant.get_actuation_input_port())
-    
+
     # The diagram
     diagram = builder.Build()
     simulator = Simulator(diagram)

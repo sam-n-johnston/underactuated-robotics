@@ -70,7 +70,7 @@ class Hopper2dController(VectorSystem):
         # This is an arbitrary choice of spring constant for the leg.
         self.K_l = 100
         self.desired_alpha_array = []
-         
+
     def calculate_moment_of_inertia(self):
         return self.m_f * self.l_max ** 2.
 
