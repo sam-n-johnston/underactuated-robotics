@@ -1,6 +1,6 @@
 import unittest
 
-class TestStringMethods(unittest.TestCase):
+class TestTakeOffPlus(unittest.TestCase):
     def test_estimate_height_and_speed_knowing_liftoff_plus(self):
         self.assertEqual('foo'.upper(), 'FOO')
         # Set liftoff plus state
