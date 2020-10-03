@@ -65,34 +65,105 @@ class Hopper2dController(VectorSystem):
         self.m_b = 1.0
         self.m_f = 0.1
         self.l_max = 0.5
+        self.gravity = 9.81
         self.desired_height = 1. # I added this
 
         # This is an arbitrary choice of spring constant for the leg.
         self.K_l = 100
         self.desired_alpha_array = []
 
+    def calculate_energy_loss_by_stance_phase(self, touch_down_plus_state):
+        return self.calculate_energy_loss_by_touch_down(touch_down_plus_state) + \
+            self.calculate_energy_loss_by_lift_off(touch_down_plus_state)
+
+    def calculate_kinetic_energy(self, mass, speed):
+        return 1.0 / 2.0 * mass * speed ** 2.0
+
+    def calculate_potential_energy(self, mass, height):
+        return self.gravity * mass * height
+
+    def calculate_total_energy(self, flight_phase):
+        kinetic_energy_body = self.calculate_kinetic_energy(self.m_b, flight_phase[0+5]) + \
+            self.calculate_kinetic_energy(self.m_b, flight_phase[1+5])
+        kinetic_energy_foot = self.calculate_kinetic_energy(self.m_f, flight_phase[0+5]) + \
+            self.calculate_kinetic_energy(self.m_f, flight_phase[1+5])
+        potential_energy_body = self.calculate_potential_energy(self.m_b, flight_phase[1])
+        potential_energy_foot = self.calculate_potential_energy(self.m_f, flight_phase[1])
+
+        total_energy_minus = kinetic_energy_body + kinetic_energy_foot + potential_energy_body + potential_energy_foot
+
+        return total_energy_minus
+
+    def calculate_energy_loss_by_touch_down(self, flight_phase):
+        # Get total energy minus (before impact)
+        total_energy_minus = self.calculate_total_energy(flight_phase)
+        print('Starting energy: ' + str(total_energy_minus))
+
+        # Get touch down minus speeds (before impact)
+        xd_minus = flight_phase[0+5]
+        zd_energy = total_energy_minus - self.calculate_kinetic_energy(self.m_b + self.m_f, xd_minus)
+        zd_minus = math.sqrt(2 * zd_energy / (self.m_b + self.m_f))
+
+        # Calculate body speeds plus (after impact)
+        xd_body_plus = xd_minus
+        zd_body_plus = zd_minus
+
+        # Calculate energy plus (after impact)
+        total_energy_plus = self.calculate_kinetic_energy(self.m_b, xd_body_plus) + \
+            self.calculate_kinetic_energy(self.m_b, zd_body_plus)
+
+        # Calculate energy loss
+        # Should be equal to kinectic energy lost in foot
+        kinetic_energy_lost_in_foot = self.calculate_kinetic_energy(self.m_f, xd_minus) + \
+            self.calculate_kinetic_energy(self.m_f, zd_minus)
+        print('Touch down energy loss: ' + str(total_energy_minus - total_energy_plus) + \
+            ' == ' + str(kinetic_energy_lost_in_foot))
+        return total_energy_minus - total_energy_plus
+
+    def calculate_energy_loss_by_lift_off(self, flight_phase):
+        # Get total energy minus (before impact)
+        total_energy_minus = self.calculate_total_energy(flight_phase) - \
+            self.calculate_energy_loss_by_touch_down(flight_phase)
+        print('Starting energy stance phase: ' + str(total_energy_minus))
+
+        # Get lift off minus speeds (before impact)
+        xd_minus = flight_phase[0+5] # Not quite right... but maybe close enough
+        zd_energy = total_energy_minus - self.calculate_kinetic_energy(self.m_b + self.m_f, xd_minus)
+        zd_minus = math.sqrt(2 * zd_energy / (self.m_b + self.m_f))
+
+        # Calculate body speeds plus (after impact)
+        xd_body_plus = self.m_b / (self.m_b + self.m_f) * xd_minus
+        zd_body_plus = self.m_b / (self.m_b + self.m_f) * zd_minus
+
+        # Calculate energy plus (after impact)
+        total_energy_plus = self.calculate_kinetic_energy(self.m_b + self.m_f, xd_body_plus) + \
+            self.calculate_kinetic_energy(self.m_b + self.m_f, zd_body_plus)
+
+        # Calculate energy loss
+        print('Lift off energy loss: ' + str(total_energy_minus - total_energy_plus))
+        return total_energy_minus - total_energy_plus
+
     def calculate_apex_xd_based_off_liftoff_plus(self, lift_off_plus_state):
         return lift_off_plus_state[0+5]
 
     def calculate_apex_z_based_off_liftoff_plus(self, lift_off_plus_state):
-        g = 9.81
         lift_off_zd = lift_off_plus_state[1+5]
         print('lift_off_zd')
         print(lift_off_zd)
-        apex_z = lift_off_zd ** 2 / (2 * g)
+        apex_z = lift_off_zd ** 2 / (2 * self.gravity)
         return apex_z + lift_off_plus_state[1]
          
     def calculate_moment_of_inertia(self):
         return self.m_f * self.l_max ** 2.
 
     def calculate_lift_off_angle(self):
-        return math.atan2(self.desired_lateral_velocity, (2 * 9.81 * self.desired_height) ** (1. / 2.))
+        return math.atan2(self.desired_lateral_velocity, (2 * self.gravity * self.desired_height) ** (1. / 2.))
         
     def calculate_time_required_btwn_lo_and_td(self):
         lift_off_height = math.cos(self.calculate_lift_off_angle()) * self.hopper_leg_length 
-        intial_vertical_speed = -(2 * 9.81 * self.desired_height) ** (1. / 2.)
+        intial_vertical_speed = -(2 * self.gravity * self.desired_height) ** (1. / 2.)
         final_vertical_speed = -intial_vertical_speed
-        return (final_vertical_speed - intial_vertical_speed) / 9.81
+        return (final_vertical_speed - intial_vertical_speed) / self.gravity
 
     def calculate_desired_acceleration(self):
         current_position = -self.calculate_lift_off_angle()
@@ -275,7 +346,7 @@ def Simulate2dHopper(x0, duration,
     parser = Parser(plant)
     parser.AddModelFromFile("raibert_hopper_2d.sdf")
     plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("ground"))
-    plant.AddForceElement(UniformGravityFieldElement())
+    plant.AddForceElement(UniformGravityFieldElement([0.0, 0.0, -9.81]))
     plant.Finalize()
     
     # Create a logger to log at 30hz

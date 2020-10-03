@@ -5,21 +5,57 @@ from hopper_2d import Simulate2dHopper
 class TestTakeOffPlus(unittest.TestCase):
     def test_apedx_z_and_xd_based_off_liftoff_plus_1(self):
         lift_off_plus_state = np.zeros(10)
-        lift_off_plus_state[1] = 1.51 # foot just touching the ground
+        lift_off_plus_state[1] = 1.52 # foot just touching the ground
         lift_off_plus_state[4] = 0.5 # l distance
         lift_off_plus_state[0+5] = 0.5 # xd, horizontal speed
-        lift_off_plus_state[1+5] = 0. # z, vertical speed
+        lift_off_plus_state[1+5] = 0.1 # z, vertical speed
 
         self.apex_z_and_xd_based_off_liftoff_plus(lift_off_plus_state)
 
     def test_apedx_z_and_xd_based_off_liftoff_plus_2(self):
         lift_off_plus_state = np.zeros(10)
-        lift_off_plus_state[1] = 1.51 # foot just touching the ground
+        lift_off_plus_state[1] = 1.52 # foot just touching the ground
         lift_off_plus_state[4] = 0.5 # l distance
         lift_off_plus_state[0+5] = 0.5 # xd, horizontal speed
         lift_off_plus_state[1+5] = 5.0 # z, vertical speed
 
         self.apex_z_and_xd_based_off_liftoff_plus(lift_off_plus_state)
+
+
+    def test_energy_loss_by_stance_phase(self):
+        touch_down_plus_state = np.zeros(10)
+        touch_down_plus_state[1] = 4 # height
+        touch_down_plus_state[4] = 0.5 # l distance
+
+        # Use Simulate2dHopper to simulate
+        hopper, controller, state_log = Simulate2dHopper(x0 = touch_down_plus_state,
+                               duration=2,
+                               desired_lateral_velocity = 0.5)
+
+        # Find first apex in simulation
+        first_apex_index = self.find_first_apex_in_simulation(state_log)
+
+        # Get simulated max height (z) & horizontal speed (xd) at first apex
+        simulated_max_z = self.find_simulated_max_z(state_log, first_apex_index)
+        simulated_max_xd = self.find_simulated_max_xd(state_log, first_apex_index)
+
+        # Calculate max 
+        energy_lost = controller.calculate_energy_loss_by_stance_phase(touch_down_plus_state)
+        # Transforming all that energy into potential energy
+        g = 9.81
+        m = controller.m_b + controller.m_f
+        height_lost = energy_lost / m / g
+        new_height = touch_down_plus_state[1] - height_lost
+        print('Total energy loss: ' + str(energy_lost))
+        print('New height loss: ' + str(new_height))
+
+        # Compare both values
+        self.print_and_assert_almost_equal_simulated_and_calculated(
+            simulated_max_z, new_height, 'max height (z)'
+        )
+        self.print_and_assert_almost_equal_simulated_and_calculated(
+            simulated_max_xd, 0.0, 'max horizontal speed (xd)'
+        )
 
     def apex_z_and_xd_based_off_liftoff_plus(self, lift_off_plus_state):
         # Use Simulate2dHopper to simulate
@@ -64,7 +100,7 @@ class TestTakeOffPlus(unittest.TestCase):
 
     def find_first_apex_in_simulation(self, state_log):
         simulated_zs = state_log.data()[1, :]
-        index = 1 # Skip first time step because simulation is strange
+        index = 10 # Skip first few time steps
         first_apex_index = -1
 
         while index < len(simulated_zs) and first_apex_index == -1:
