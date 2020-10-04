@@ -68,7 +68,6 @@ class Hopper2dController(VectorSystem):
         self.m_f = 0.1 * mass_factor
         self.l_max = 0.5
         self.gravity = 9.81
-        self.desired_height = 1. # I added this
 
         # This is an arbitrary choice of spring constant for the leg.
         self.K_l = 100
@@ -85,8 +84,8 @@ class Hopper2dController(VectorSystem):
         return self.gravity * mass * height
 
     def spring_potential_energy(self, state):
-        # OK
-        l_rest = 1.0 # self.ChooseSpringRestLength(X = u)
+        # TODO: use correct value
+        l_rest = 1.0
 
         # Passive spring force
         leg_compression_amount = l_rest - state[4]
@@ -98,20 +97,19 @@ class Hopper2dController(VectorSystem):
     def potential_energy_foot(self, state):
         # Foot's mass might be a point mass in the MIDDLE!
         # Not quite correct, need to account for alpha and theta
-        # if state[1] + self.body_size_height - self.hopper_leg_length / 2.0 > 1.0 :
-        #     foot_height = state[1] + self.body_size_height - self.hopper_leg_length / 2.0
-        # else:
-        #     foot_height = self.hopper_leg_length / 2.0
+        if state[1] + self.body_size_height - self.hopper_leg_length / 2.0 > 1.0 :
+            foot_height = state[1] + self.body_size_height - self.hopper_leg_length / 2.0
+        else:
+            foot_height = self.hopper_leg_length / 2.0
 
-        # return self.calculate_potential_energy(self.m_f, foot_height)
-        return self.calculate_potential_energy(self.m_f, state[1])
+        return self.calculate_potential_energy(self.m_f, foot_height)
 
     def calculate_total_energy(self, state):
         kinetic_energy_body = self.calculate_kinetic_energy(self.m_b, state[0+5]) + \
-            self.calculate_kinetic_energy(self.m_b, state[1+5]) # GOOD
+            self.calculate_kinetic_energy(self.m_b, state[1+5])
         kinetic_energy_foot = self.calculate_kinetic_energy(self.m_f, state[0+5]) + \
             self.calculate_kinetic_energy(self.m_f, state[1+5])
-        potential_energy_body = self.potential_energy_body(state) # GOOD
+        potential_energy_body = self.potential_energy_body(state)
         potential_energy_foot = self.potential_energy_foot(state)
         spring_potential_energy = self.spring_potential_energy(state)
 
