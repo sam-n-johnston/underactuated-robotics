@@ -61,9 +61,11 @@ class Hopper2dController(VectorSystem):
         # Default parameters for the hopper -- should match
         # raibert_hopper_1d.sdf, where applicable.
         # You're welcome to use these, but you probably don't need them.
-        self.hopper_leg_length = 1.0
-        self.m_b = 1.0
-        self.m_f = 0.1
+        self.hopper_leg_length = 2.0
+        self.body_size_height = 0.5
+        mass_factor = 1.40186
+        self.m_b = 1.0 * mass_factor
+        self.m_f = 0.1 * mass_factor
         self.l_max = 0.5
         self.gravity = 9.81
         self.desired_height = 1. # I added this
@@ -82,74 +84,114 @@ class Hopper2dController(VectorSystem):
     def calculate_potential_energy(self, mass, height):
         return self.gravity * mass * height
 
-    def calculate_total_energy(self, flight_phase):
-        kinetic_energy_body = self.calculate_kinetic_energy(self.m_b, flight_phase[0+5]) + \
-            self.calculate_kinetic_energy(self.m_b, flight_phase[1+5])
-        kinetic_energy_foot = self.calculate_kinetic_energy(self.m_f, flight_phase[0+5]) + \
-            self.calculate_kinetic_energy(self.m_f, flight_phase[1+5])
-        potential_energy_body = self.calculate_potential_energy(self.m_b, flight_phase[1])
-        potential_energy_foot = self.calculate_potential_energy(self.m_f, flight_phase[1])
+    def spring_potential_energy(self, state):
+        # OK
+        l_rest = 1.0 # self.ChooseSpringRestLength(X = u)
 
-        total_energy_minus = kinetic_energy_body + kinetic_energy_foot + potential_energy_body + potential_energy_foot
+        # Passive spring force
+        leg_compression_amount = l_rest - state[4]
+        print(str(self.K_l))
+        return 1.0 / 2.0 * self.K_l * leg_compression_amount ** 2.0 / 2.0
 
-        return total_energy_minus
+    def potential_energy_body(self, state):
+        return self.calculate_potential_energy(self.m_b, state[1])
+
+    def potential_energy_foot(self, state):
+        # Foot's mass might be a point mass in the MIDDLE!
+        # Not quite correct, need to account for alpha and theta
+        # if state[1] + self.body_size_height - self.hopper_leg_length / 2.0 > 1.0 :
+        #     foot_height = state[1] + self.body_size_height - self.hopper_leg_length / 2.0
+        # else:
+        #     foot_height = self.hopper_leg_length / 2.0
+
+        # return self.calculate_potential_energy(self.m_f, foot_height)
+        return self.calculate_potential_energy(self.m_f, state[1])
+
+    def calculate_total_energy(self, state):
+        kinetic_energy_body = self.calculate_kinetic_energy(self.m_b, state[0+5]) + \
+            self.calculate_kinetic_energy(self.m_b, state[1+5]) # GOOD
+        kinetic_energy_foot = self.calculate_kinetic_energy(self.m_f, state[0+5]) + \
+            self.calculate_kinetic_energy(self.m_f, state[1+5])
+        potential_energy_body = self.potential_energy_body(state) # GOOD
+        potential_energy_foot = self.potential_energy_foot(state)
+        spring_potential_energy = self.spring_potential_energy(state)
+        # print('Energies kinetic_energy_body: ' + str(kinetic_energy_body))
+        # print('Energies kinetic_energy_foot: ' + str(kinetic_energy_foot))
+        # print('Energies potential_energy_body: ' + str(potential_energy_body))
+        # print('Energies potential_energy_foot: ' + str(potential_energy_foot))
+        # print('Energies spring_potential_energy: ' + str(spring_potential_energy))
+
+        energy = kinetic_energy_body + kinetic_energy_foot +\
+            potential_energy_body + potential_energy_foot + spring_potential_energy
+
+        return energy
 
     def calculate_energy_loss_by_touch_down(self, flight_phase):
         # Get total energy minus (before impact)
         total_energy_minus = self.calculate_total_energy(flight_phase)
-        print('Starting energy: ' + str(total_energy_minus))
+        # print('Starting energy: ' + str(total_energy_minus))
 
         # Get touch down minus speeds (before impact)
         xd_minus = flight_phase[0+5]
-        zd_energy = total_energy_minus - self.calculate_kinetic_energy(self.m_b + self.m_f, xd_minus)
+        xd_minus_energy = self.calculate_kinetic_energy(self.m_b + self.m_f, xd_minus)
+        # Got to remove the body height potential energy, change foot mass height
+        # These are assuming that the leg is straight down.
+        potential_energy_foot = self.calculate_potential_energy(self.m_f, self.hopper_leg_length / 2)
+        potential_energy_body = self.calculate_potential_energy(self.m_b, self.hopper_leg_length)
+        zd_energy = total_energy_minus - xd_minus_energy - \
+            potential_energy_foot - potential_energy_body
         zd_minus = math.sqrt(2 * zd_energy / (self.m_b + self.m_f))
 
-        # Calculate body speeds plus (after impact)
-        xd_body_plus = xd_minus
-        zd_body_plus = zd_minus
-
-        # Calculate energy plus (after impact)
-        total_energy_plus = self.calculate_kinetic_energy(self.m_b, xd_body_plus) + \
-            self.calculate_kinetic_energy(self.m_b, zd_body_plus)
-
-        # Calculate energy loss
-        # Should be equal to kinectic energy lost in foot
         kinetic_energy_lost_in_foot = self.calculate_kinetic_energy(self.m_f, xd_minus) + \
             self.calculate_kinetic_energy(self.m_f, zd_minus)
-        print('Touch down energy loss: ' + str(total_energy_minus - total_energy_plus) + \
-            ' == ' + str(kinetic_energy_lost_in_foot))
-        return total_energy_minus - total_energy_plus
+
+        return kinetic_energy_lost_in_foot
 
     def calculate_energy_loss_by_lift_off(self, flight_phase):
         # Get total energy minus (before impact)
         total_energy_minus = self.calculate_total_energy(flight_phase) - \
             self.calculate_energy_loss_by_touch_down(flight_phase)
-        print('Starting energy stance phase: ' + str(total_energy_minus))
+        # print('Starting energy stance phase: ' + str(total_energy_minus))
 
         # Get lift off minus speeds (before impact)
-        xd_minus = flight_phase[0+5] # Not quite right... but maybe close enough
-        zd_energy = total_energy_minus - self.calculate_kinetic_energy(self.m_b + self.m_f, xd_minus)
-        zd_minus = math.sqrt(2 * zd_energy / (self.m_b + self.m_f))
+        xd_minus = flight_phase[0+5] # Not quite right... but maybe close enough?
+        xd_minus_energy = self.calculate_kinetic_energy(self.m_b, xd_minus)
+        # Got to remove the potential energy from body + foot
+        # These are assuming that the leg is straight down.
+        potential_energy_foot = self.calculate_potential_energy(self.m_f, self.hopper_leg_length / 2)
+        potential_energy_body = self.calculate_potential_energy(self.m_b, self.hopper_leg_length)
+
+        zd_energy = total_energy_minus - xd_minus_energy - \
+            potential_energy_foot - potential_energy_body
+        zd_minus = math.sqrt(2 * zd_energy / self.m_b)
 
         # Calculate body speeds plus (after impact)
-        xd_body_plus = self.m_b / (self.m_b + self.m_f) * xd_minus
-        zd_body_plus = self.m_b / (self.m_b + self.m_f) * zd_minus
+        xd_plus = self.m_b / (self.m_b + self.m_f) * xd_minus
+        zd_plus = self.m_b / (self.m_b + self.m_f) * zd_minus
 
         # Calculate energy plus (after impact)
-        total_energy_plus = self.calculate_kinetic_energy(self.m_b + self.m_f, xd_body_plus) + \
-            self.calculate_kinetic_energy(self.m_b + self.m_f, zd_body_plus)
+        total_energy_plus = self.calculate_kinetic_energy(self.m_b + self.m_f, xd_plus) + \
+            self.calculate_kinetic_energy(self.m_b + self.m_f, zd_plus) + \
+                potential_energy_foot + potential_energy_body
 
         # Calculate energy loss
-        print('Lift off energy loss: ' + str(total_energy_minus - total_energy_plus))
+        # print('Lift off energy loss: ' + str(total_energy_minus - total_energy_plus))
         return total_energy_minus - total_energy_plus
 
     def calculate_apex_xd_based_off_liftoff_plus(self, lift_off_plus_state):
         return lift_off_plus_state[0+5]
 
+    def is_foot_in_contact(self, state):
+        # Foot's mass might be a point mass in the MIDDLE!
+        # Not quite correct, need to account for alpha and theta
+        if state[1] + self.body_size_height - self.hopper_leg_length / 2.0 > 1.0:
+            return False
+        return True
+
     def calculate_apex_z_based_off_liftoff_plus(self, lift_off_plus_state):
         lift_off_zd = lift_off_plus_state[1+5]
-        print('lift_off_zd')
-        print(lift_off_zd)
+        # print('lift_off_zd')
+        # print(lift_off_zd)
         apex_z = lift_off_zd ** 2 / (2 * self.gravity)
         return apex_z + lift_off_plus_state[1]
          
@@ -312,14 +354,13 @@ class Hopper2dController(VectorSystem):
         x_ref[:] = u
         
         # OK
-        l_rest = self.ChooseSpringRestLength(X = u)
+        l_rest = 1.0 # self.ChooseSpringRestLength(X = u)
 
         # Passive spring force
         leg_compression_amount = l_rest - u[4]
 
         y[:] = [  self.ChooseThighTorque(X = u),
                   self.K_l * leg_compression_amount]
-
 
 '''
 Simulates a 2d hopper from initial conditions x0 (which
@@ -375,7 +416,7 @@ def Simulate2dHopper(x0, duration,
     plant_context.get_mutable_discrete_state_vector().SetFromVector(x0)
 
     simulator.StepTo(duration)
-    return plant, controller, state_log # , desired_alpha ## Add if you want to see the desired alpha of the system
+    return plant, controller, state_log
 
 
 def ConstructVisualizer():
