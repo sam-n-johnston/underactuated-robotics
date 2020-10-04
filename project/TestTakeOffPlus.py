@@ -35,80 +35,56 @@ class TestTakeOffPlus(unittest.TestCase):
         first_bottom_index = self.find_first_bottom_in_simulation(state_log)
 
         # Find simulated energy at apex
-        print('')
-        print('CALCULATIN APEX ENERGY')
         apex_energy = controller.calculate_total_energy(apex_state)
-        print('Apex state: ' + str(apex_state))
-        print('Apex energy: ' + str(apex_energy))
 
         # Find simulated energy at bottom
         bottom_state = state_log.data()[:, first_bottom_index]
-        mid_state_index = int(2.0/3.0 * first_bottom_index)
-        mid_state = state_log.data()[:, mid_state_index]
-        print('CALCULATIN BOTTOM ENERGY')
         bottom_energy = controller.calculate_total_energy(bottom_state)
-        print('Bottom state: ' + str(bottom_state))
-        print('Bottom energy: ' + str(bottom_energy))
-
-        # print('Starting...')
-        # print('Mid state: ' + str(mid_state))
-        # print('Mid state: ' + str(controller.calculate_total_energy(mid_state)))
-        print('Lost energy1: ' + str(apex_energy - bottom_energy))
-
-        print('==========================================================')
-        # print('Energy2:\t' + str(state_log.data()[:, 2]))
-        # for i in range (1000):
-        #     if controller.is_foot_in_contact(state_log.data()[:, i]):
-        #         print('========================= IN CONTACT =========================')
-        #     print('Energy' + str(i) + ':\t'  + str(controller.calculate_total_energy(state_log.data()[:, i])))
+        simulated_energy_loss = apex_energy - bottom_energy
 
         # Calculate theorical energy loss
-        energy_loss = controller.calculate_energy_loss_by_touch_down(bottom_state)
-        print('Lost energy2: ' + str(energy_loss))
-
-        # Compare both values
-        # self.print_and_assert_almost_equal_simulated_and_calculated(
-        #     simulated_max_z, new_height, 'max height (z)'
-        # )
-        # self.print_and_assert_almost_equal_simulated_and_calculated(
-        #     simulated_max_xd, 0.0, 'max horizontal speed (xd)'
-        # )
-
-
-    def test_energy_loss_by_stance_phase(self):
-        apex_state = np.zeros(10)
-        apex_state[1] = 4 # height
-        apex_state[4] = 0.5 # l distance
-
-        # Use Simulate2dHopper to simulate
-        hopper, controller, state_log = Simulate2dHopper(x0 = apex_state,
-                               duration=2,
-                               desired_lateral_velocity = 0.0)
-
-        # Find first apex in simulation
-        first_apex_index = self.find_first_apex_in_simulation(state_log)
-
-        # Get simulated max height (z) & horizontal speed (xd) at first apex
-        simulated_max_z = self.find_simulated_max_z(state_log, first_apex_index)
-        simulated_max_xd = self.find_simulated_max_xd(state_log, first_apex_index)
-
-        # Calculate max 
-        energy_lost = controller.calculate_energy_loss_by_stance_phase(apex_state)
-        # Transforming all that energy into potential energy
-        g = 9.81
-        m = controller.m_b + controller.m_f
-        height_lost = energy_lost / m / g
-        new_height = apex_state[1] - height_lost
-        print('Total energy loss: ' + str(energy_lost))
-        print('New height loss: ' + str(new_height))
+        calculated_energy_loss = controller.calculate_energy_loss_by_touch_down(bottom_state)
 
         # Compare both values
         self.print_and_assert_almost_equal_simulated_and_calculated(
-            simulated_max_z, new_height, 'max height (z)'
+            simulated_energy_loss, calculated_energy_loss, 'touch down energy loss'
         )
-        self.print_and_assert_almost_equal_simulated_and_calculated(
-            simulated_max_xd, 0.0, 'max horizontal speed (xd)'
-        )
+
+
+    # def test_energy_loss_by_stance_phase(self):
+    #     apex_state = np.zeros(10)
+    #     apex_state[1] = 4 # height
+    #     apex_state[4] = 0.5 # l distance
+
+    #     # Use Simulate2dHopper to simulate
+    #     hopper, controller, state_log = Simulate2dHopper(x0 = apex_state,
+    #                            duration=2,
+    #                            desired_lateral_velocity = 0.0)
+
+    #     # Find first apex in simulation
+    #     first_apex_index = self.find_first_apex_in_simulation(state_log)
+
+    #     # Get simulated max height (z) & horizontal speed (xd) at first apex
+    #     simulated_max_z = self.find_simulated_max_z(state_log, first_apex_index)
+    #     simulated_max_xd = self.find_simulated_max_xd(state_log, first_apex_index)
+
+    #     # Calculate max 
+    #     energy_lost = controller.calculate_energy_loss_by_stance_phase(apex_state)
+    #     # Transforming all that energy into potential energy
+    #     g = 9.81
+    #     m = controller.m_b + controller.m_f
+    #     height_lost = energy_lost / m / g
+    #     new_height = apex_state[1] - height_lost
+    #     print('Total energy loss: ' + str(energy_lost))
+    #     print('New height loss: ' + str(new_height))
+
+    #     # Compare both values
+    #     self.print_and_assert_almost_equal_simulated_and_calculated(
+    #         simulated_max_z, new_height, 'max height (z)'
+    #     )
+    #     self.print_and_assert_almost_equal_simulated_and_calculated(
+    #         simulated_max_xd, 0.0, 'max horizontal speed (xd)'
+    #     )
 
     def apex_z_and_xd_based_off_liftoff_plus(self, lift_off_plus_state):
         # Use Simulate2dHopper to simulate

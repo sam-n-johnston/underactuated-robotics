@@ -90,7 +90,6 @@ class Hopper2dController(VectorSystem):
 
         # Passive spring force
         leg_compression_amount = l_rest - state[4]
-        print(str(self.K_l))
         return 1.0 / 2.0 * self.K_l * leg_compression_amount ** 2.0 / 2.0
 
     def potential_energy_body(self, state):
@@ -115,11 +114,6 @@ class Hopper2dController(VectorSystem):
         potential_energy_body = self.potential_energy_body(state) # GOOD
         potential_energy_foot = self.potential_energy_foot(state)
         spring_potential_energy = self.spring_potential_energy(state)
-        # print('Energies kinetic_energy_body: ' + str(kinetic_energy_body))
-        # print('Energies kinetic_energy_foot: ' + str(kinetic_energy_foot))
-        # print('Energies potential_energy_body: ' + str(potential_energy_body))
-        # print('Energies potential_energy_foot: ' + str(potential_energy_foot))
-        # print('Energies spring_potential_energy: ' + str(spring_potential_energy))
 
         energy = kinetic_energy_body + kinetic_energy_foot +\
             potential_energy_body + potential_energy_foot + spring_potential_energy
@@ -129,7 +123,6 @@ class Hopper2dController(VectorSystem):
     def calculate_energy_loss_by_touch_down(self, flight_phase):
         # Get total energy minus (before impact)
         total_energy_minus = self.calculate_total_energy(flight_phase)
-        # print('Starting energy: ' + str(total_energy_minus))
 
         # Get touch down minus speeds (before impact)
         xd_minus = flight_phase[0+5]
@@ -151,7 +144,6 @@ class Hopper2dController(VectorSystem):
         # Get total energy minus (before impact)
         total_energy_minus = self.calculate_total_energy(flight_phase) - \
             self.calculate_energy_loss_by_touch_down(flight_phase)
-        # print('Starting energy stance phase: ' + str(total_energy_minus))
 
         # Get lift off minus speeds (before impact)
         xd_minus = flight_phase[0+5] # Not quite right... but maybe close enough?
@@ -175,7 +167,6 @@ class Hopper2dController(VectorSystem):
                 potential_energy_foot + potential_energy_body
 
         # Calculate energy loss
-        # print('Lift off energy loss: ' + str(total_energy_minus - total_energy_plus))
         return total_energy_minus - total_energy_plus
 
     def calculate_apex_xd_based_off_liftoff_plus(self, lift_off_plus_state):
@@ -190,8 +181,6 @@ class Hopper2dController(VectorSystem):
 
     def calculate_apex_z_based_off_liftoff_plus(self, lift_off_plus_state):
         lift_off_zd = lift_off_plus_state[1+5]
-        # print('lift_off_zd')
-        # print(lift_off_zd)
         apex_z = lift_off_zd ** 2 / (2 * self.gravity)
         return apex_z + lift_off_plus_state[1]
          
