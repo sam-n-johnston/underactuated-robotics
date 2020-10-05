@@ -112,8 +112,8 @@ class TestTakeOffPlus(unittest.TestCase):
         )
 
     def print_and_assert_almost_equal_simulated_and_calculated(self, simulated, calculated, name):
-        print('Simulated vs calculated ' + name +': ' + '%.2f' % simulated + \
-            ' VS ' + '%.2f' % calculated)
+        print('Simulated vs calculated ' + name +': ' + '%.5f' % simulated + \
+            ' VS ' + '%.5f' % calculated)
         self.assertAlmostEqual(simulated, calculated, 2)
 
 

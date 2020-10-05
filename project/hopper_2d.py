@@ -63,7 +63,7 @@ class Hopper2dController(VectorSystem):
         # You're welcome to use these, but you probably don't need them.
         self.hopper_leg_length = 2.0
         self.body_size_height = 0.5
-        mass_factor = 1.40186
+        mass_factor = 1.4531
         self.m_b = 1.0 * mass_factor
         self.m_f = 0.1 * mass_factor
         self.l_max = 0.5
