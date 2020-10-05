@@ -63,7 +63,7 @@ class Hopper2dController(VectorSystem):
         # You're welcome to use these, but you probably don't need them.
         self.hopper_leg_length = 2.0
         self.body_size_height = 0.5
-        mass_factor = 1.4531
+        mass_factor = 2.8052240
         self.m_b = 1.0 * mass_factor
         self.m_f = 0.1 * mass_factor
         self.l_max = 0.5
@@ -89,15 +89,16 @@ class Hopper2dController(VectorSystem):
 
         # Passive spring force
         leg_compression_amount = l_rest - state[4]
-        return 1.0 / 2.0 * self.K_l * leg_compression_amount ** 2.0 / 2.0
+        return 1.0 / 2.0 * self.K_l * leg_compression_amount ** 2.0
 
     def potential_energy_body(self, state):
         return self.calculate_potential_energy(self.m_b, state[1])
 
     def potential_energy_foot(self, state):
-        # Foot's mass might be a point mass in the MIDDLE!
+        # Assuming foot's mass in a point mass in the middle
         # Not quite correct, need to account for alpha and theta
-        if state[1] + self.body_size_height - self.hopper_leg_length / 2.0 > 1.0 :
+        is_foot_in_contact = state[1] + self.body_size_height - self.hopper_leg_length / 2.0 > self.hopper_leg_length / 2.0
+        if is_foot_in_contact:
             foot_height = state[1] + self.body_size_height - self.hopper_leg_length / 2.0
         else:
             foot_height = self.hopper_leg_length / 2.0
@@ -125,10 +126,9 @@ class Hopper2dController(VectorSystem):
         # Get touch down minus speeds (before impact)
         xd_minus = flight_phase[0+5]
         xd_minus_energy = self.calculate_kinetic_energy(self.m_b + self.m_f, xd_minus)
-        # Got to remove the body height potential energy, change foot mass height
         # These are assuming that the leg is straight down.
-        potential_energy_foot = self.calculate_potential_energy(self.m_f, self.hopper_leg_length / 2)
-        potential_energy_body = self.calculate_potential_energy(self.m_b, self.hopper_leg_length)
+        potential_energy_foot = self.calculate_potential_energy(self.m_b, self.hopper_leg_length / 2.0)
+        potential_energy_body = self.calculate_potential_energy(self.m_b, self.hopper_leg_length - self.body_size_height)
         zd_energy = total_energy_minus - xd_minus_energy - \
             potential_energy_foot - potential_energy_body
         zd_minus = math.sqrt(2 * zd_energy / (self.m_b + self.m_f))
@@ -148,7 +148,7 @@ class Hopper2dController(VectorSystem):
         xd_minus_energy = self.calculate_kinetic_energy(self.m_b, xd_minus)
         # Got to remove the potential energy from body + foot
         # These are assuming that the leg is straight down.
-        potential_energy_foot = self.calculate_potential_energy(self.m_f, self.hopper_leg_length / 2)
+        potential_energy_foot = self.calculate_potential_energy(self.m_f, self.hopper_leg_length / 2.0)
         potential_energy_body = self.calculate_potential_energy(self.m_b, self.hopper_leg_length)
 
         zd_energy = total_energy_minus - xd_minus_energy - \
@@ -160,6 +160,7 @@ class Hopper2dController(VectorSystem):
         zd_plus = self.m_b / (self.m_b + self.m_f) * zd_minus
 
         # Calculate energy plus (after impact)
+        spring_energy = 1.0 / 2.0 * self.K_l * (0.5) ** 2.0
         total_energy_plus = self.calculate_kinetic_energy(self.m_b + self.m_f, xd_plus) + \
             self.calculate_kinetic_energy(self.m_b + self.m_f, zd_plus) + \
                 potential_energy_foot + potential_energy_body

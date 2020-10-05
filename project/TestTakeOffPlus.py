@@ -45,6 +45,13 @@ class TestTakeOffPlus(unittest.TestCase):
         # Calculate theorical energy loss
         calculated_energy_loss = controller.calculate_energy_loss_by_touch_down(bottom_state)
 
+        print('==========================================================')
+        print('Energy2:\t' + str(state_log.data()[:, 2]))
+        for i in range (1000):
+            if controller.is_foot_in_contact(state_log.data()[:, i]):
+                print('========================= IN CONTACT =========================')
+            print('Energy' + str(i) + ':\t'  + str(controller.calculate_total_energy(state_log.data()[:, i])))
+
         # Compare both values
         self.print_and_assert_almost_equal_simulated_and_calculated(
             simulated_energy_loss, calculated_energy_loss, 'touch down energy loss'
