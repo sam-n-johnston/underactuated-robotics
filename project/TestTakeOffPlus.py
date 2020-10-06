@@ -32,6 +32,10 @@ class TestTakeOffPlus(unittest.TestCase):
                                duration=2,
                                desired_lateral_velocity = 0.0)
 
+        # vals = hopper.CalcGravityGeneralizedForces()
+        # print('vals')
+        # print(vals)
+
         # Find first bottom in simulation
         first_bottom_index = self.find_first_bottom_in_simulation(state_log)
 
@@ -52,7 +56,11 @@ class TestTakeOffPlus(unittest.TestCase):
         #     if controller.is_foot_in_contact(state_log.data()[:, i]):
         #         print('========================= IN CONTACT =========================')
         #     print('Energy' + str(i) + ':\t'  + str(controller.calculate_total_energy(state_log.data()[:, i])))
-
+        print('')
+        print('Energy apex:\t'  + str(apex_energy))
+        print('apex:\t'  + str(apex_state))
+        print('Energy bottom:\t'  + str(bottom_energy))
+        print('bottom:\t'  + str(bottom_state))
         # Compare both values
         self.print_and_assert_almost_equal_simulated_and_calculated(
             simulated_energy_loss, calculated_energy_loss, 'touch down energy loss'
