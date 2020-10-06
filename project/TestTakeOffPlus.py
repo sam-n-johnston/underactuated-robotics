@@ -24,7 +24,7 @@ class TestTakeOffPlus(unittest.TestCase):
     def test_energy_loss_by_touch_down(self):
         apex_state = np.zeros(10)
         # TODO: If I change this height, it stops working...
-        apex_state[1] = 2.0 # height
+        apex_state[1] = 3.5 # height
         apex_state[4] = 0.5 # leg length
 
         # Use Simulate2dHopper to simulate

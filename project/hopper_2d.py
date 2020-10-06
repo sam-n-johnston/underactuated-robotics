@@ -4,6 +4,7 @@ import argparse
 import math
 import os.path
 import time
+import inspect
 
 import numpy as np
 
@@ -63,9 +64,9 @@ class Hopper2dController(VectorSystem):
         # You're welcome to use these, but you probably don't need them.
         self.hopper_leg_length = 2.0
         self.body_size_height = 0.5
-        # mass_factor = 2.8052240
-        self.m_b = 1.0 # * mass_factor
-        self.m_f = 0.1 # * mass_factor
+        mass_factor = 2.8795349 # Based on the potential energy from plant.CalcPotentialEnergy(plant_context)
+        self.m_b = 1.0 * mass_factor
+        self.m_f = 0.1 * mass_factor
         self.l_max = 0.5
         self.gravity = 9.81
 
@@ -127,6 +128,7 @@ class Hopper2dController(VectorSystem):
         # Get touch down minus speeds (before impact)
         xd_minus = flight_phase[0+5]
         xd_minus_energy = self.calculate_kinetic_energy(self.m_b + self.m_f, xd_minus)
+
         # These are assuming that the leg is straight down.
         potential_energy_foot = self.calculate_potential_energy(self.m_f, self.hopper_leg_length / 2.0)
         potential_energy_body = self.calculate_potential_energy(self.m_b, self.hopper_leg_length - self.body_size_height)
@@ -394,7 +396,7 @@ def Simulate2dHopper(x0, duration,
             print_period = print_period))
     builder.Connect(plant.get_continuous_state_output_port(), controller.get_input_port(0))
     builder.Connect(controller.get_output_port(0), plant.get_actuation_input_port())
-    
+
     # The diagram
     diagram = builder.Build()
     simulator = Simulator(diagram)
@@ -404,8 +406,22 @@ def Simulate2dHopper(x0, duration,
         plant, simulator.get_mutable_context())
     plant_context.get_mutable_discrete_state_vector().SetFromVector(x0)
 
+    # TODO: Next steps is to evaluate the potential energy in multiple contexts
+    # to find the actual masses (top, 25% down, 50% down, etc.)
+    # Also, is the spring considered in this? I don't think so...
+    # Also, maybe there's a way with the SDF file to get the mass
+    # or another API in drake... but I can't find one
+    # Either the mass is incorrect or the gravity is incorrect...
     potential = plant.CalcPotentialEnergy(plant_context)
+    body = plant.GetFrameByName('body')
     print('Potential: ' + str(potential))
+    print('Body: ' + str(inspect.getmembers(plant)))
+    # print('TEsting')
+    # print(inspect.getmembers(body))
+    # print('something: ' + str(body.GetSpatialInertiaInBodyFrame()))
+    # print('something: ' + str(inspect.getmembers(body.model_instance())))
+    # print('something' + str(inspect.getmembers(body.body())))
+    # print('Pose: ' + str(body.mass()))
 
     simulator.StepTo(duration)
     return plant, controller, state_log
