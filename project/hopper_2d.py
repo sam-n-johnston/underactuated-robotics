@@ -19,7 +19,8 @@ from pydrake.all import (
     Parser,
     PortDataType,
     MultibodyPlant,
-    UniformGravityFieldElement
+    UniformGravityFieldElement,
+    default_model_instance
 )
 from IPython.display import HTML
 import matplotlib.pyplot as plt
@@ -400,11 +401,20 @@ def Simulate2dHopper(x0, duration,
     # The diagram
     diagram = builder.Build()
     simulator = Simulator(diagram)
+    print('controller: =========================================')
+    print(inspect.getmembers(MultibodyPlant))
+    # print(inspect.getmembers(controller.default_model_instance))
+    print('diagram: =========================================')
+    print(inspect.getmembers(diagram))
     simulator.Initialize()
     
     plant_context = diagram.GetMutableSubsystemContext(
         plant, simulator.get_mutable_context())
+    print('plant_context 1: ====================================')
+    print(inspect.getmembers(plant_context))
     plant_context.get_mutable_discrete_state_vector().SetFromVector(x0)
+    print('plant_context 2: ====================================')
+    print(inspect.getmembers(plant_context))
 
     # TODO: Next steps is to evaluate the potential energy in multiple contexts
     # to find the actual masses (top, 25% down, 50% down, etc.)
@@ -414,8 +424,8 @@ def Simulate2dHopper(x0, duration,
     # Either the mass is incorrect or the gravity is incorrect...
     potential = plant.CalcPotentialEnergy(plant_context)
     body = plant.GetFrameByName('body')
-    print('Potential: ' + str(potential))
-    print('Body: ' + str(inspect.getmembers(plant)))
+    # print('Potential: ' + str(potential))
+    # print('Body: ' + str(inspect.getmembers(plant)))
     # print('TEsting')
     # print(inspect.getmembers(body))
     # print('something: ' + str(body.GetSpatialInertiaInBodyFrame()))
