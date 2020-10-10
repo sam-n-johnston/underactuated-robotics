@@ -353,17 +353,12 @@ class Hopper2dController(VectorSystem):
                   self.K_l * leg_compression_amount]
 
 '''
-Simulates a 2d hopper from initial conditions x0 (which
-should be a 10x1 np array) for duration seconds,
-targeting a specified lateral velocity and printing to the
-console every print_period seconds (as an indicator of
-progress, only if print_period is nonzero).
+Builds the block diagram for the 2d hopper
 '''
-def Simulate2dHopper(x0, duration,
-        desired_lateral_velocity = 0.0,
-        print_period = 0.0):
+def build_block_diagram(desired_lateral_velocity = 0.0, print_period = 0.0):
     builder = DiagramBuilder()
-    
+
+    # Build the plant
     plant = builder.AddSystem(MultibodyPlant(0.0005))
     scene_graph = builder.AddSystem(SceneGraph())
     plant.RegisterAsSourceForSceneGraph(scene_graph)
@@ -372,20 +367,19 @@ def Simulate2dHopper(x0, duration,
                         plant.get_source_id()))
     builder.Connect(scene_graph.get_query_output_port(),
                     plant.get_geometry_query_input_port())
-    
-    # Build the plant
+
+    # Build the robot
     parser = Parser(plant)
     parser.AddModelFromFile("raibert_hopper_2d.sdf")
     plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("ground"))
-    # plant.AddForceElement(UniformGravityFieldElement())
     plant.Finalize()
-    
+
     # Create a logger to log at 30hz
     state_dim = plant.num_positions() + plant.num_velocities()
     state_log = builder.AddSystem(SignalLogger(state_dim))
     state_log.DeclarePeriodicPublish(0.0333, 0.0) # 30hz logging
     builder.Connect(plant.get_state_output_port(), state_log.get_input_port(0))
-    
+
     # The controller
     controller = builder.AddSystem(
         Hopper2dController(plant,
@@ -394,8 +388,7 @@ def Simulate2dHopper(x0, duration,
     builder.Connect(plant.get_state_output_port(), controller.get_input_port(0))
     builder.Connect(controller.get_output_port(0), plant.get_actuation_input_port())
 
-    # The diagram
-
+    # Create visualizer
     visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
         scene_graph,
         xlim=[-1, 1],
@@ -407,6 +400,23 @@ def Simulate2dHopper(x0, duration,
 
     diagram = builder.Build()
 
+    return diagram, plant, controller, state_log
+
+'''
+Simulates a 2d hopper from initial conditions x0 (which
+should be a 10x1 np array) for duration seconds,
+targeting a specified lateral velocity and printing to the
+console every print_period seconds (as an indicator of
+progress, only if print_period is nonzero).
+'''
+def Simulate2dHopper(x0, duration,
+        desired_lateral_velocity = 0.0,
+        print_period = 0.0):
+
+    # The diagram, plant and contorller
+    diagram, plant, controller, state_log = build_block_diagram(desired_lateral_velocity, print_period)
+
+    # Start visualizer recording
     visualizer = diagram.GetSubsystemByName('visualizer')
     visualizer.start_recording()
 
@@ -423,8 +433,8 @@ def Simulate2dHopper(x0, duration,
     # Also, maybe there's a way with the SDF file to get the mass
     # or another API in drake... but I can't find one
     # Either the mass is incorrect or the gravity is incorrect...
-    potential = plant.CalcPotentialEnergy(plant_context)
-    body = plant.GetFrameByName('body')
+    # potential = plant.CalcPotentialEnergy(plant_context)
+    # body = plant.GetFrameByName('body')
 
     simulator.AdvanceTo(duration)
 
