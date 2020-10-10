@@ -1,4 +1,3 @@
-
 # Underactuated robotics assignments - MIT 6.824
 
 ## Prerequesits
@@ -8,6 +7,7 @@ You need to have docker installed. These instructions work for mac.
 ## Set 1
 
 To start set 1, run:
+
 ```
 ./drake_docker_utility_scripts/docker_run_notebook.sh drake-20190508  ./set_1/
 ```
@@ -15,6 +15,7 @@ To start set 1, run:
 ## Set 2
 
 To start set 2, run:
+
 ```
 ./drake_docker_utility_scripts/docker_run_notebook.sh drake-20190508  ./set_2/
 ```
@@ -22,6 +23,7 @@ To start set 2, run:
 ## Set 3
 
 To start set 3, run:
+
 ```
 ./drake_docker_utility_scripts/docker_run_notebook.sh drake-20190508  ./set_3/
 ```
@@ -29,6 +31,7 @@ To start set 3, run:
 ## Set 4
 
 To start set 4, run:
+
 ```
 ./drake_docker_utility_scripts/docker_run_notebook.sh drake-20190508  ./set_4/
 ```
@@ -36,6 +39,18 @@ To start set 4, run:
 ## Set 5
 
 To start set 4, run:
+
 ```
 ./drake_docker_utility_scripts/docker_run_notebook.sh drake-20190508  ./set_5/
 ```
+
+## Project
+
+To start the project, run:
+
+```
+docker build ./project --tag underactuated_robotics_project
+docker run -it -p 8080:8080 -v "$(pwd)/project"":"/notebooks underactuated_robotics_project
+```
+
+./drake_docker_utility_scripts/docker_run_notebook.sh drake-20201009 ./project/
