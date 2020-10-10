@@ -154,15 +154,6 @@ class TestTakeOffPlus(unittest.TestCase):
 
         self.touchdown_minus_state_based_on_flight_state(apex_state)
 
-    def test_touchdown_plus_state(self):
-        apex_state = np.zeros(10)
-        apex_state[1] = 3.5 # height
-        apex_state[4] = 0.5 # l distance
-        apex_state[1+5] = 0.5 # zd
-        apex_state[0+5] = 0.5 # xd
-
-        self.touchdown_minus_state_based_on_flight_state(apex_state)
-
     def touchdown_minus_state_based_on_flight_state(self, flight_state):
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0 = flight_state,
@@ -181,6 +172,37 @@ class TestTakeOffPlus(unittest.TestCase):
             self.print_and_assert_almost_equal_simulated_and_calculated(
                 simulated_state_at_touchdown_minus[i],
                 calculated_state_index_at_touchdown_minus[i],
+                'state at touchdown minus [' + str(i) + ']',
+                1 if i < 8 else 0
+            )
+
+    def test_touchdown_plus_state(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5 # height
+        apex_state[4] = 0.5 # l distance
+        apex_state[1+5] = 0.5 # zd
+        apex_state[0+5] = 0.5 # xd
+
+        self.touchdown_plus_state_based_on_flight_state(apex_state)
+
+    def touchdown_plus_state_based_on_flight_state(self, flight_state):
+        # Use Simulate2dHopper to simulate
+        hopper, controller, state_log, animation = Simulate2dHopper(x0 = flight_state,
+                               duration=2,
+                               desired_lateral_velocity = 0.0)
+
+        # Get simulated touchdown minus state
+        simulated_state_index_at_touchdown_plus = self.find_simulated_state_index_at_touchdown_plus(state_log, controller)
+        simulated_state_at_touchdown_plus = state_log.data()[:, simulated_state_index_at_touchdown_plus]
+
+        # Get calcualted touchdown minus state
+        calculated_state_index_at_touchdown_plus = controller.get_touchdown_plus_state_based_on_flight_state(flight_state)
+
+        # Compare both values EXCEPT ld (leg extension derivative)
+        for i in range(calculated_state_index_at_touchdown_plus.shape[0] - 1):
+            self.print_and_assert_almost_equal_simulated_and_calculated(
+                simulated_state_at_touchdown_plus[i],
+                calculated_state_index_at_touchdown_plus[i],
                 'state at touchdown minus [' + str(i) + ']',
                 1 if i < 8 else 0
             )
@@ -247,6 +269,18 @@ class TestTakeOffPlus(unittest.TestCase):
             index = index + 1
             if controller.is_foot_in_contact(state_log.data()[:, index]):
                 touchdown_minus_index = index - 1
+
+        return touchdown_minus_index
+
+    def find_simulated_state_index_at_touchdown_plus(self, state_log, controller):
+        index = 0
+        touchdown_minus_index = -1
+        number_of_states = len(state_log.data()[1,:])
+
+        while touchdown_minus_index == -1 and index < number_of_states:
+            index = index + 1
+            if controller.is_foot_in_contact(state_log.data()[:, index]):
+                touchdown_minus_index = index
 
         return touchdown_minus_index
 

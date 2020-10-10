@@ -157,6 +157,9 @@ class Hopper2dController(VectorSystem):
 
         return touchdown_minus_state
 
+    def get_touchdown_plus_state_based_on_flight_state(self, flight_phase):
+        return self.get_touchdown_minus_state_based_on_flight_state(flight_phase)
+
     def calculate_energy_loss_by_touch_down(self, flight_phase):
         touchdown_minus_state = self.get_touchdown_minus_state_based_on_flight_state(flight_phase)
 
