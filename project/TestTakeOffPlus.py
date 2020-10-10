@@ -28,7 +28,7 @@ class TestTakeOffPlus(unittest.TestCase):
         apex_state[4] = 0.5 # leg length
 
         # Use Simulate2dHopper to simulate
-        hopper, controller, state_log = Simulate2dHopper(x0 = apex_state,
+        hopper, controller, state_log, animation = Simulate2dHopper(x0 = apex_state,
                                duration=2,
                                desired_lateral_velocity = 0.0)
 
@@ -72,7 +72,7 @@ class TestTakeOffPlus(unittest.TestCase):
         apex_state[4] = 0.5 # l distance
 
         # Use Simulate2dHopper to simulate
-        hopper, controller, state_log = Simulate2dHopper(x0 = apex_state,
+        hopper, controller, state_log, animation = Simulate2dHopper(x0 = apex_state,
                                duration=2,
                                desired_lateral_velocity = 0.0)
 
@@ -103,7 +103,7 @@ class TestTakeOffPlus(unittest.TestCase):
 
     def apex_z_and_xd_based_off_liftoff_plus(self, lift_off_plus_state):
         # Use Simulate2dHopper to simulate
-        hopper, controller, state_log = Simulate2dHopper(x0 = lift_off_plus_state,
+        hopper, controller, state_log, animation = Simulate2dHopper(x0 = lift_off_plus_state,
                                duration=2,
                                desired_lateral_velocity = 0.0)
 

@@ -437,8 +437,13 @@ def Simulate2dHopper(x0, duration,
     # Also, maybe there's a way with the SDF file to get the mass
     # or another API in drake... but I can't find one
     # Either the mass is incorrect or the gravity is incorrect...
-    # potential = plant.CalcPotentialEnergy(plant_context)
-    # body = plant.GetFrameByName('body')
+    potential = plant.CalcPotentialEnergy(plant_context)
+    body = plant.GetBodyByName('body')
+    foot = plant.GetBodyByName('foot')
+    print(body.default_mass())
+    print(foot.default_mass())
+    print(plant.gravity_field().gravity_vector())
+
 
     simulator.AdvanceTo(duration)
 

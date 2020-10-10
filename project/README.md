@@ -36,3 +36,7 @@ Other phases of things I could do later:
 1. Go in the container (`docker exec -ti CONTAINER_ID bash`)
 2. Go to the `/notebook` directory
 3. Run the tests (`python ./LiftOffPlusTest.py`)
+
+## 1D hopper
+
+I used 1D hopper as an example to move from python2 to python3
