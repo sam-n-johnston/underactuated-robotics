@@ -52,5 +52,3 @@ To start the project, run:
 docker build ./project --tag underactuated_robotics_project
 docker run -it -p 8080:8080 -v "$(pwd)/project"":"/notebooks underactuated_robotics_project
 ```
-
-./drake_docker_utility_scripts/docker_run_notebook.sh drake-20201009 ./project/
