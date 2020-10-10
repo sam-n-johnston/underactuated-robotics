@@ -72,9 +72,9 @@ class Hopper2dController(VectorSystem):
         self.K_l = 100
         self.desired_alpha_array = []
 
-    def calculate_energy_loss_by_stance_phase(self, touch_down_plus_state):
-        return self.calculate_energy_loss_by_touch_down(touch_down_plus_state) + \
-            self.calculate_energy_loss_by_lift_off(touch_down_plus_state)
+    def calculate_energy_loss_by_stance_phase(self, flight_phase):
+        return self.calculate_energy_loss_by_touch_down(flight_phase) + \
+            self.calculate_energy_loss_by_lift_off(flight_phase)
 
     def calculate_kinetic_energy(self, mass, speed):
         return 1.0 / 2.0 * mass * speed ** 2.0
@@ -118,6 +118,40 @@ class Hopper2dController(VectorSystem):
             potential_energy_body + potential_energy_foot + spring_potential_energy
 
         return energy
+
+    def get_touchdown_minus_state_based_on_flight_state(self, flight_phase):
+        total_energy_flight = self.calculate_total_energy(flight_phase)
+
+        # Get touch down minus speeds (before impact)
+        xd_flight = flight_phase[0+5]
+        xd_flight_energy = self.calculate_kinetic_energy(self.m_b + self.m_f, xd_flight)
+
+        # Potential energy
+        # TODO: take into  account for alpha and theta
+        body_z_touchdown_minus = self.hopper_leg_length - self.body_size_height
+        # TODO: take into  account for alpha and theta
+        foot_z_touchdown_minus = self.hopper_leg_length / 2.0
+
+        potential_energy_foot = self.calculate_potential_energy(self.m_f, foot_z_touchdown_minus)
+        potential_energy_body = self.calculate_potential_energy(self.m_b, body_z_touchdown_minus)
+
+        # Spring energy
+        leg_compression_amount_minus = 0.5
+        spring_potential_energy = 1.0 / 2.0 * self.K_l * leg_compression_amount_minus ** 2.0
+
+        # Kinectic energy
+        zd_energy = total_energy_flight - xd_flight_energy - \
+            potential_energy_foot - potential_energy_body - spring_potential_energy
+        zd_minus = -math.sqrt(2.0 * zd_energy / (self.m_b + self.m_f))
+
+        # TODO: Add xd estimation
+        touchdown_minus_state = np.zeros(10)
+        touchdown_minus_state[1] = body_z_touchdown_minus
+        touchdown_minus_state[4] = leg_compression_amount_minus
+        touchdown_minus_state[0+5] = xd_flight
+        touchdown_minus_state[1+5] = zd_minus
+
+        return touchdown_minus_state
 
     def calculate_energy_loss_by_touch_down(self, flight_phase):
         # Get total energy minus (before impact)

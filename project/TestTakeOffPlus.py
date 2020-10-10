@@ -65,7 +65,6 @@ class TestTakeOffPlus(unittest.TestCase):
 
     def test_energy_loss_by_touch_down(self):
         apex_state = np.zeros(10)
-        # TODO: If I change this height, it stops working...
         apex_state[1] = 3.5 # height
         apex_state[4] = 0.5 # leg length
 
@@ -88,17 +87,7 @@ class TestTakeOffPlus(unittest.TestCase):
         # Calculate theorical energy loss
         calculated_energy_loss = controller.calculate_energy_loss_by_touch_down(apex_state)
 
-        # print('==========================================================')
-        # print('Energy2:\t' + str(state_log.data()[:, 2]))
-        # for i in range (2000):
-        #     if i == 1300:
-        #         print(state_log.data()[:, i])
-        #     if controller.is_foot_in_contact(state_log.data()[:, i]):
-        #         print('========================= IN CONTACT =========================')
-        #         print(state_log.data()[:, i])
-        #     print('Energy' + str(i) + ':\t'  + str(controller.calculate_total_energy(state_log.data()[:, i])))
-        print('')
-        print('Energy apex:\t'  + str(apex_energy))
+        print('\nEnergy apex:\t'  + str(apex_energy))
         print('Energy bottom:\t'  + str(bottom_energy))
         print('Energy loss simulation:\t'  + str(simulated_energy_loss))
         print('Energy loss calculation:\t'  + str(calculated_energy_loss))
@@ -140,6 +129,32 @@ class TestTakeOffPlus(unittest.TestCase):
         self.print_and_assert_almost_equal_simulated_and_calculated(
             simulated_max_xd, 0.0, 'max horizontal speed (xd)', 1
         )
+    
+    def test_touchdown_minus_state_based_on_flight_state(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5 # height
+        apex_state[4] = 0.5 # l distance
+
+        # Use Simulate2dHopper to simulate
+        hopper, controller, state_log, animation = Simulate2dHopper(x0 = apex_state,
+                               duration=2,
+                               desired_lateral_velocity = 0.0)
+
+        # Get simulated touchdown minus state
+        simulated_state_index_at_touchdown_minus = self.find_simulated_state_index_at_touchdown_minus(state_log, controller)
+        simulated_state_at_touchdown_minus = state_log.data()[:, simulated_state_index_at_touchdown_minus]
+
+        # Get calcualted touchdown minus state
+        calculated_state_index_at_touchdown_minus = controller.get_touchdown_minus_state_based_on_flight_state(apex_state)
+
+        # Compare both values
+        for i in range(calculated_state_index_at_touchdown_minus.shape[0]):
+            self.print_and_assert_almost_equal_simulated_and_calculated(
+                simulated_state_at_touchdown_minus[i],
+                calculated_state_index_at_touchdown_minus[i],
+                'state at touchdown minus [' + str(i) + ']',
+                1
+            )
 
     def apex_z_and_xd_based_off_liftoff_plus(self, lift_off_plus_state):
         # Use Simulate2dHopper to simulate
@@ -168,9 +183,8 @@ class TestTakeOffPlus(unittest.TestCase):
 
     def print_and_assert_almost_equal_simulated_and_calculated(self, simulated, calculated, name, digits = 2):
         print('Simulated vs calculated ' + name +': ' + '%.5f' % simulated + \
-            ' VS ' + '%.5f' % calculated)
+            '\t VS \t' + '%.5f' % calculated)
         self.assertAlmostEqual(simulated, calculated, digits)
-
 
     def find_simulated_max_z(self, state_log, first_apex_index):
         simulated_zs = state_log.data()[1, :]
@@ -195,6 +209,18 @@ class TestTakeOffPlus(unittest.TestCase):
 
         return first_apex_index
 
+    def find_simulated_state_index_at_touchdown_minus(self, state_log, controller):
+        index = 0
+        touchdown_minus_index = -1
+        number_of_states = len(state_log.data()[1,:])
+
+        while touchdown_minus_index == -1 and index < number_of_states:
+            index = index + 1
+            if controller.is_foot_in_contact(state_log.data()[:, index]):
+                touchdown_minus_index = index - 1
+
+        return touchdown_minus_index
+
     def find_first_bottom_in_simulation(self, state_log):
         simulated_zs = state_log.data()[1, :]
         index = 1
@@ -208,6 +234,15 @@ class TestTakeOffPlus(unittest.TestCase):
 
         return first_bottom_index
 
+    # Do a test with xd and theta is not 0 and do the forward calculations to figure out
+    # the location of the next apex
+
+    # Create a function that calculates the touchdown minus state based on a flight state
+    # Then, another fuinciton that calcualted the touchdown plus state based on touchdown minus
+    # Then forward iterator thought the stance phase, assuming join with the floor and point mass body
+
+    # Do a test that makes it maintain it's height
+    # Add a flag to turn on/off maintaining desired height in the controller
     # def test_set_liftoff_plus_knowing_desired_height_and_speed(self):
     #     self.assertEqual('foo'.upper(), 'FOO')
     #     # Set desired height & speed
