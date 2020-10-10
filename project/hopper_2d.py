@@ -9,8 +9,8 @@ import inspect
 import numpy as np
 
 from pydrake.all import (
-    RigidBodyTree,
-    AddModelInstancesFromSdfString, FloatingBaseType,
+    MultibodyPlant,
+    PlanarSceneGraphVisualizer,
     DiagramBuilder, 
     Simulator, VectorSystem,
     ConstantVectorSource, 
@@ -18,7 +18,6 @@ from pydrake.all import (
     AbstractValue,
     Parser,
     PortDataType,
-    MultibodyPlant,
     UniformGravityFieldElement,
     default_model_instance
 )
@@ -30,9 +29,6 @@ from pydrake.geometry import DispatchLoadMessage, SceneGraph
 from pydrake.lcm import DrakeMockLcm
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.systems.rendering import PoseBundle
-
-from underactuated.planar_multibody_visualizer import PlanarMultibodyVisualizer
-
 
 class Hopper2dController(VectorSystem):
     def __init__(self, hopper, 
@@ -357,6 +353,59 @@ class Hopper2dController(VectorSystem):
                   self.K_l * leg_compression_amount]
 
 '''
+Builds the block diagram for the 2d hopper
+'''
+def build_block_diagram(desired_lateral_velocity = 0.0, print_period = 0.0):
+    builder = DiagramBuilder()
+
+    # Build the plant
+    plant = builder.AddSystem(MultibodyPlant(0.0005))
+    scene_graph = builder.AddSystem(SceneGraph())
+    plant.RegisterAsSourceForSceneGraph(scene_graph)
+    builder.Connect(plant.get_geometry_poses_output_port(),
+                    scene_graph.get_source_pose_port(
+                        plant.get_source_id()))
+    builder.Connect(scene_graph.get_query_output_port(),
+                    plant.get_geometry_query_input_port())
+
+    # Build the robot
+    parser = Parser(plant)
+    parser.AddModelFromFile("raibert_hopper_2d.sdf")
+    plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("ground"))
+    plant.Finalize()
+    plant.set_name('plant')
+
+    # Create a logger to log at 30hz
+    state_dim = plant.num_positions() + plant.num_velocities()
+    state_log = builder.AddSystem(SignalLogger(state_dim))
+    state_log.DeclarePeriodicPublish(0.0333, 0.0) # 30hz logging
+    builder.Connect(plant.get_state_output_port(), state_log.get_input_port(0))
+    state_log.set_name('state_log')
+
+    # The controller
+    controller = builder.AddSystem(
+        Hopper2dController(plant,
+            desired_lateral_velocity = desired_lateral_velocity,
+            print_period = print_period))
+    builder.Connect(plant.get_state_output_port(), controller.get_input_port(0))
+    builder.Connect(controller.get_output_port(0), plant.get_actuation_input_port())
+    controller.set_name('controller')
+
+    # Create visualizer
+    visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
+        scene_graph,
+        xlim=[-1, 1],
+        ylim=[-.2, 2.5],
+        show=False
+    ))
+    builder.Connect(scene_graph.get_pose_bundle_output_port(), visualizer.get_input_port(0))
+    visualizer.set_name('visualizer')
+
+    diagram = builder.Build()
+
+    return diagram
+
+'''
 Simulates a 2d hopper from initial conditions x0 (which
 should be a 10x1 np array) for duration seconds,
 targeting a specified lateral velocity and printing to the
@@ -366,55 +415,21 @@ progress, only if print_period is nonzero).
 def Simulate2dHopper(x0, duration,
         desired_lateral_velocity = 0.0,
         print_period = 0.0):
-    builder = DiagramBuilder()
-    
-    plant = builder.AddSystem(MultibodyPlant(0.0005))
-    scene_graph = builder.AddSystem(SceneGraph())
-    plant.RegisterAsSourceForSceneGraph(scene_graph)
-    builder.Connect(plant.get_geometry_poses_output_port(),
-                    scene_graph.get_source_pose_port(
-                        plant.get_source_id()))
-    builder.Connect(scene_graph.get_query_output_port(),
-                    plant.get_geometry_query_input_port())
-    
-    # Build the plant
-    parser = Parser(plant)
-    parser.AddModelFromFile("raibert_hopper_2d.sdf")
-    plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("ground"))
-    plant.AddForceElement(UniformGravityFieldElement())
-    plant.Finalize()
-    
-    # Create a logger to log at 30hz
-    state_dim = plant.num_positions() + plant.num_velocities()
-    state_log = builder.AddSystem(SignalLogger(state_dim))
-    state_log.DeclarePeriodicPublish(0.0333, 0.0) # 30hz logging
-    builder.Connect(plant.get_continuous_state_output_port(), state_log.get_input_port(0))
-    
-    # The controller
-    controller = builder.AddSystem(
-        Hopper2dController(plant,
-            desired_lateral_velocity = desired_lateral_velocity,
-            print_period = print_period))
-    builder.Connect(plant.get_continuous_state_output_port(), controller.get_input_port(0))
-    builder.Connect(controller.get_output_port(0), plant.get_actuation_input_port())
 
-    # The diagram
-    diagram = builder.Build()
+    # The diagram, plant and contorller
+    diagram = build_block_diagram(desired_lateral_velocity, print_period)
+
+    # Start visualizer recording
+    visualizer = diagram.GetSubsystemByName('visualizer')
+    visualizer.start_recording()
+
     simulator = Simulator(diagram)
-    print('controller: =========================================')
-    print(inspect.getmembers(MultibodyPlant))
-    # print(inspect.getmembers(controller.default_model_instance))
-    print('diagram: =========================================')
-    print(inspect.getmembers(diagram))
     simulator.Initialize()
     
+    plant = diagram.GetSubsystemByName('plant')
     plant_context = diagram.GetMutableSubsystemContext(
         plant, simulator.get_mutable_context())
-    print('plant_context 1: ====================================')
-    print(inspect.getmembers(plant_context))
     plant_context.get_mutable_discrete_state_vector().SetFromVector(x0)
-    print('plant_context 2: ====================================')
-    print(inspect.getmembers(plant_context))
 
     # TODO: Next steps is to evaluate the potential energy in multiple contexts
     # to find the actual masses (top, 25% down, 50% down, etc.)
@@ -422,31 +437,29 @@ def Simulate2dHopper(x0, duration,
     # Also, maybe there's a way with the SDF file to get the mass
     # or another API in drake... but I can't find one
     # Either the mass is incorrect or the gravity is incorrect...
-    potential = plant.CalcPotentialEnergy(plant_context)
-    body = plant.GetFrameByName('body')
-    # print('Potential: ' + str(potential))
-    # print('Body: ' + str(inspect.getmembers(plant)))
-    # print('TEsting')
-    # print(inspect.getmembers(body))
-    # print('something: ' + str(body.GetSpatialInertiaInBodyFrame()))
-    # print('something: ' + str(inspect.getmembers(body.model_instance())))
-    # print('something' + str(inspect.getmembers(body.body())))
-    # print('Pose: ' + str(body.mass()))
+    # potential = plant.CalcPotentialEnergy(plant_context)
+    # body = plant.GetFrameByName('body')
 
-    simulator.StepTo(duration)
-    return plant, controller, state_log
+    simulator.AdvanceTo(duration)
 
-def ConstructVisualizer():
-    from underactuated import PlanarRigidBodyVisualizer
-    tree = RigidBodyTree()
-    AddModelInstancesFromSdfString(
-        open("raibert_hopper_2d.sdf", 'r').read(),
-        FloatingBaseType.kFixed,
-        None, tree)
-    viz = PlanarRigidBodyVisualizer(tree, xlim=[-5, 5], ylim=[-5, 5])
-    viz.fig.set_size_inches(10, 5)
-    return viz
+    visualizer.stop_recording()
+    animation = visualizer.get_recording_as_animation()
 
+    controller = diagram.GetSubsystemByName('controller')
+    state_log = diagram.GetSubsystemByName('state_log')
+
+    return plant, controller, state_log, animation
+
+def Plot():
+    # dummy controller just to build the diagram for the plot
+    preload_controller = MatrixGain(np.zeros((1, 4)))
+    preload_controller.set_name('preload controller')
+
+    # plot block diagram
+    plt.figure(figsize=(20, 8))
+    diagram = build_block_diagram(preload_controller)
+    diagram.set_name('Block Diagram of the One-Dimensional Hopper')
+    plot_system_graphviz(diagram)
 
 if __name__ == '__main__':
     x0 = np.zeros(10)
