@@ -144,8 +144,12 @@ class Hopper2dController(VectorSystem):
             potential_energy_foot - potential_energy_body - spring_potential_energy
         zd_minus = -math.sqrt(2.0 * zd_energy / (self.m_b + self.m_f))
 
-        # TODO: Add xd estimation
+        # Get time estimation
+        zd_current = flight_phase[1+5]
+        time_elapsed = (zd_current - zd_minus) / self.gravity
+
         touchdown_minus_state = np.zeros(10)
+        touchdown_minus_state[0] = time_elapsed * xd_flight
         touchdown_minus_state[1] = body_z_touchdown_minus
         touchdown_minus_state[4] = leg_compression_amount_minus
         touchdown_minus_state[0+5] = xd_flight

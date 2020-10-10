@@ -93,7 +93,7 @@ class TestTakeOffPlus(unittest.TestCase):
         print('Energy loss calculation:\t'  + str(calculated_energy_loss))
         # Compare both values
         self.print_and_assert_almost_equal_simulated_and_calculated(
-            simulated_energy_loss, calculated_energy_loss, 'touch down energy loss', -1
+            simulated_energy_loss, calculated_energy_loss, 'touch down energy loss', 0
         )
 
     def test_energy_loss_by_stance_phase(self):
@@ -129,8 +129,8 @@ class TestTakeOffPlus(unittest.TestCase):
         self.print_and_assert_almost_equal_simulated_and_calculated(
             simulated_max_xd, 0.0, 'max horizontal speed (xd)', 1
         )
-    
-    def test_touchdown_minus_state_based_on_flight_state(self):
+
+    def test_touchdown_minus_state_based_on_flight_state_1(self):
         apex_state = np.zeros(10)
         apex_state[1] = 3.5 # height
         apex_state[4] = 0.5 # l distance
@@ -153,7 +153,62 @@ class TestTakeOffPlus(unittest.TestCase):
                 simulated_state_at_touchdown_minus[i],
                 calculated_state_index_at_touchdown_minus[i],
                 'state at touchdown minus [' + str(i) + ']',
-                1
+                1 if i < 9 else 0
+            )
+
+    def test_touchdown_minus_state_based_on_flight_state_2(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5 # height
+        apex_state[4] = 0.5 # l distance
+        apex_state[1+5] = 0.5 # zd
+
+        # Use Simulate2dHopper to simulate
+        hopper, controller, state_log, animation = Simulate2dHopper(x0 = apex_state,
+                               duration=2,
+                               desired_lateral_velocity = 0.0)
+
+        # Get simulated touchdown minus state
+        simulated_state_index_at_touchdown_minus = self.find_simulated_state_index_at_touchdown_minus(state_log, controller)
+        simulated_state_at_touchdown_minus = state_log.data()[:, simulated_state_index_at_touchdown_minus]
+
+        # Get calcualted touchdown minus state
+        calculated_state_index_at_touchdown_minus = controller.get_touchdown_minus_state_based_on_flight_state(apex_state)
+
+        # Compare both values
+        for i in range(calculated_state_index_at_touchdown_minus.shape[0]):
+            self.print_and_assert_almost_equal_simulated_and_calculated(
+                simulated_state_at_touchdown_minus[i],
+                calculated_state_index_at_touchdown_minus[i],
+                'state at touchdown minus [' + str(i) + ']',
+                1 if i < 9 else 0
+            )
+
+    def test_touchdown_minus_state_based_on_flight_state_3(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5 # height
+        apex_state[4] = 0.5 # l distance
+        apex_state[1+5] = 0.5 # zd
+        apex_state[0+5] = 0.5 # xd
+
+        # Use Simulate2dHopper to simulate
+        hopper, controller, state_log, animation = Simulate2dHopper(x0 = apex_state,
+                               duration=2,
+                               desired_lateral_velocity = 0.0)
+
+        # Get simulated touchdown minus state
+        simulated_state_index_at_touchdown_minus = self.find_simulated_state_index_at_touchdown_minus(state_log, controller)
+        simulated_state_at_touchdown_minus = state_log.data()[:, simulated_state_index_at_touchdown_minus]
+
+        # Get calcualted touchdown minus state
+        calculated_state_index_at_touchdown_minus = controller.get_touchdown_minus_state_based_on_flight_state(apex_state)
+
+        # Compare both values
+        for i in range(calculated_state_index_at_touchdown_minus.shape[0]):
+            self.print_and_assert_almost_equal_simulated_and_calculated(
+                simulated_state_at_touchdown_minus[i],
+                calculated_state_index_at_touchdown_minus[i],
+                'state at touchdown minus [' + str(i) + ']',
+                1 if i < 8 else 0
             )
 
     def apex_z_and_xd_based_off_liftoff_plus(self, lift_off_plus_state):
@@ -182,8 +237,8 @@ class TestTakeOffPlus(unittest.TestCase):
         )
 
     def print_and_assert_almost_equal_simulated_and_calculated(self, simulated, calculated, name, digits = 2):
-        print('Simulated vs calculated ' + name +': ' + '%.5f' % simulated + \
-            '\t VS \t' + '%.5f' % calculated)
+        print('Simulated vs calculated ' + name + ': ' + '{:.{}f}'.format(simulated, digits) + \
+            '\t VS \t' + '{:.{}f}'.format(calculated, digits))
         self.assertAlmostEqual(simulated, calculated, digits)
 
     def find_simulated_max_z(self, state_log, first_apex_index):
