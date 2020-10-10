@@ -63,7 +63,6 @@ class TestTakeOffPlus(unittest.TestCase):
             0
         )
 
-
     def test_energy_loss_by_touch_down(self):
         apex_state = np.zeros(10)
         # TODO: If I change this height, it stops working...
@@ -126,14 +125,13 @@ class TestTakeOffPlus(unittest.TestCase):
         simulated_max_xd = self.find_simulated_max_xd(state_log, first_apex_index)
 
         # Calculate max 
-        energy_lost = controller.calculate_energy_loss_by_stance_phase(apex_state)
+        calculated_energy_loss = controller.calculate_energy_loss_by_stance_phase(apex_state)
         # Transforming all that energy into potential energy
-        g = 9.81
-        m = controller.m_b + controller.m_f
-        height_lost = energy_lost / m / g
-        new_height = apex_state[1] - height_lost
-        print('Total energy lost: ' + str(energy_lost))
-        print('New height: ' + str(new_height))
+        calculated_height_lost = calculated_energy_loss / controller.total_mass / controller.gravity
+        new_height = apex_state[1] - calculated_height_lost
+        print('Calculated energy loss: ' + str(calculated_energy_loss))
+        print('Calculated new height: ' + str(new_height))
+        print('Simulated new height: ' + str(simulated_max_z))
 
         # Compare both values
         self.print_and_assert_almost_equal_simulated_and_calculated(
