@@ -64,50 +64,49 @@ class TestTakeOffPlus(unittest.TestCase):
         )
 
 
-    # def test_energy_loss_by_touch_down(self):
-    #     apex_state = np.zeros(10)
-    #     # TODO: If I change this height, it stops working...
-    #     apex_state[1] = 3.5 # height
-    #     apex_state[4] = 0.5 # leg length
+    def test_energy_loss_by_touch_down(self):
+        apex_state = np.zeros(10)
+        # TODO: If I change this height, it stops working...
+        apex_state[1] = 3.5 # height
+        apex_state[4] = 0.5 # leg length
 
-    #     # Use Simulate2dHopper to simulate
-    #     hopper, controller, state_log, animation = Simulate2dHopper(x0 = apex_state,
-    #                            duration=2,
-    #                            desired_lateral_velocity = 0.0)
+        # Use Simulate2dHopper to simulate
+        hopper, controller, state_log, animation = Simulate2dHopper(x0 = apex_state,
+                               duration=2,
+                               desired_lateral_velocity = 0.0)
 
-    #     # vals = hopper.CalcGravityGeneralizedForces()
-    #     # print('vals')
-    #     # print(vals)
+        # Find simulated energy at apex
+        apex_energy = controller.calculate_total_energy(apex_state)
 
-    #     # Find first bottom in simulation
-    #     first_bottom_index = self.find_first_bottom_in_simulation(state_log)
+        # Find first bottom in simulation
+        first_bottom_index = self.find_first_bottom_in_simulation(state_log)
 
-    #     # Find simulated energy at apex
-    #     apex_energy = controller.calculate_total_energy(apex_state)
+        # Find simulated energy at bottom
+        bottom_state = state_log.data()[:, first_bottom_index]
+        bottom_energy = controller.calculate_total_energy(bottom_state)
+        simulated_energy_loss = apex_energy - bottom_energy
 
-    #     # Find simulated energy at bottom
-    #     bottom_state = state_log.data()[:, first_bottom_index]
-    #     bottom_energy = controller.calculate_total_energy(bottom_state)
-    #     simulated_energy_loss = apex_energy - bottom_energy
+        # Calculate theorical energy loss
+        calculated_energy_loss = controller.calculate_energy_loss_by_touch_down(apex_state)
 
-    #     # Calculate theorical energy loss
-    #     calculated_energy_loss = controller.calculate_energy_loss_by_touch_down(bottom_state)
-
-    #     # print('==========================================================')
-    #     # print('Energy2:\t' + str(state_log.data()[:, 2]))
-    #     # for i in range (1000):
-    #     #     if controller.is_foot_in_contact(state_log.data()[:, i]):
-    #     #         print('========================= IN CONTACT =========================')
-    #     #     print('Energy' + str(i) + ':\t'  + str(controller.calculate_total_energy(state_log.data()[:, i])))
-    #     print('')
-    #     print('Energy apex:\t'  + str(apex_energy))
-    #     print('apex:\t'  + str(apex_state))
-    #     print('Energy bottom:\t'  + str(bottom_energy))
-    #     print('bottom:\t'  + str(bottom_state))
-    #     # Compare both values
-    #     self.print_and_assert_almost_equal_simulated_and_calculated(
-    #         simulated_energy_loss, calculated_energy_loss, 'touch down energy loss'
-    #     )
+        # print('==========================================================')
+        # print('Energy2:\t' + str(state_log.data()[:, 2]))
+        # for i in range (2000):
+        #     if i == 1300:
+        #         print(state_log.data()[:, i])
+        #     if controller.is_foot_in_contact(state_log.data()[:, i]):
+        #         print('========================= IN CONTACT =========================')
+        #         print(state_log.data()[:, i])
+        #     print('Energy' + str(i) + ':\t'  + str(controller.calculate_total_energy(state_log.data()[:, i])))
+        print('')
+        print('Energy apex:\t'  + str(apex_energy))
+        print('Energy bottom:\t'  + str(bottom_energy))
+        print('Energy loss simulation:\t'  + str(simulated_energy_loss))
+        print('Energy loss calculation:\t'  + str(calculated_energy_loss))
+        # Compare both values
+        self.print_and_assert_almost_equal_simulated_and_calculated(
+            simulated_energy_loss, calculated_energy_loss, 'touch down energy loss', -1
+        )
 
     # def test_energy_loss_by_stance_phase(self):
     #     apex_state = np.zeros(10)
@@ -198,18 +197,18 @@ class TestTakeOffPlus(unittest.TestCase):
 
         return first_apex_index
 
-    # def find_first_bottom_in_simulation(self, state_log):
-    #     simulated_zs = state_log.data()[1, :]
-    #     index = 1
-    #     first_bottom_index = -1
+    def find_first_bottom_in_simulation(self, state_log):
+        simulated_zs = state_log.data()[1, :]
+        index = 1
+        first_bottom_index = -1
 
-    #     while index < len(simulated_zs) and first_bottom_index == -1:
-    #         index = index + 1
-    #         if  simulated_zs[index] < simulated_zs[index - 1] and \
-    #             simulated_zs[index] < simulated_zs[index + 1]:
-    #             first_bottom_index = index
+        while index < len(simulated_zs) and first_bottom_index == -1:
+            index = index + 1
+            if  simulated_zs[index] < simulated_zs[index - 1] and \
+                simulated_zs[index] < simulated_zs[index + 1]:
+                first_bottom_index = index
 
-    #     return first_bottom_index
+        return first_bottom_index
 
     # def test_set_liftoff_plus_knowing_desired_height_and_speed(self):
     #     self.assertEqual('foo'.upper(), 'FOO')

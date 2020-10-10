@@ -61,9 +61,10 @@ class Hopper2dController(VectorSystem):
         # You're welcome to use these, but you probably don't need them.
         self.hopper_leg_length = 2.0
         self.body_size_height = 0.5
+        self.total_mass = 3.095499 # Based on the potential energy from plant.CalcPotentialEnergy(plant_context)
         mass_factor = 2.81409 # Based on the potential energy from plant.CalcPotentialEnergy(plant_context)
-        self.m_b = 1.0 * mass_factor
-        self.m_f = 0.1 * mass_factor
+        self.m_f = 0.1 # If I increase this mass, it decreases the energy loss... this doesn't make any sense
+        self.m_b = self.total_mass - self.m_f
         self.l_max = 0.5
         self.gravity = 9.81
 
@@ -129,9 +130,11 @@ class Hopper2dController(VectorSystem):
         # These are assuming that the leg is straight down.
         potential_energy_foot = self.calculate_potential_energy(self.m_f, self.hopper_leg_length / 2.0)
         potential_energy_body = self.calculate_potential_energy(self.m_b, self.hopper_leg_length - self.body_size_height)
+        leg_compression_amount_minus = 0.5
+        spring_potential_energy = 1.0 / 2.0 * self.K_l * leg_compression_amount_minus ** 2.0
         zd_energy = total_energy_minus - xd_minus_energy - \
-            potential_energy_foot - potential_energy_body
-        zd_minus = math.sqrt(2 * zd_energy / (self.m_b + self.m_f))
+            potential_energy_foot - potential_energy_body - spring_potential_energy
+        zd_minus = math.sqrt(2.0 * zd_energy / (self.m_b + self.m_f))
 
         kinetic_energy_lost_in_foot = self.calculate_kinetic_energy(self.m_f, xd_minus) + \
             self.calculate_kinetic_energy(self.m_f, zd_minus)
@@ -438,12 +441,6 @@ def Simulate2dHopper(x0, duration,
     # or another API in drake... but I can't find one
     # Either the mass is incorrect or the gravity is incorrect...
     potential = plant.CalcPotentialEnergy(plant_context)
-    print('SOMETHING ====================')
-    print(plant.GetBodyByName('body').body_frame())
-    # print(inspect.getmembers(plant.GetBodyByName('body').body_frame()))
-    # print(plant.GetBodyByName('foot').default_mass())
-    print('SOMETHING1 ====================')
-    print(potential)
 
     simulator.AdvanceTo(duration)
 
