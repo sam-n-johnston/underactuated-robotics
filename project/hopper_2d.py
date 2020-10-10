@@ -373,12 +373,14 @@ def build_block_diagram(desired_lateral_velocity = 0.0, print_period = 0.0):
     parser.AddModelFromFile("raibert_hopper_2d.sdf")
     plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("ground"))
     plant.Finalize()
+    plant.set_name('plant')
 
     # Create a logger to log at 30hz
     state_dim = plant.num_positions() + plant.num_velocities()
     state_log = builder.AddSystem(SignalLogger(state_dim))
     state_log.DeclarePeriodicPublish(0.0333, 0.0) # 30hz logging
     builder.Connect(plant.get_state_output_port(), state_log.get_input_port(0))
+    state_log.set_name('state_log')
 
     # The controller
     controller = builder.AddSystem(
@@ -387,6 +389,7 @@ def build_block_diagram(desired_lateral_velocity = 0.0, print_period = 0.0):
             print_period = print_period))
     builder.Connect(plant.get_state_output_port(), controller.get_input_port(0))
     builder.Connect(controller.get_output_port(0), plant.get_actuation_input_port())
+    controller.set_name('controller')
 
     # Create visualizer
     visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
@@ -400,7 +403,7 @@ def build_block_diagram(desired_lateral_velocity = 0.0, print_period = 0.0):
 
     diagram = builder.Build()
 
-    return diagram, plant, controller, state_log
+    return diagram
 
 '''
 Simulates a 2d hopper from initial conditions x0 (which
@@ -414,7 +417,7 @@ def Simulate2dHopper(x0, duration,
         print_period = 0.0):
 
     # The diagram, plant and contorller
-    diagram, plant, controller, state_log = build_block_diagram(desired_lateral_velocity, print_period)
+    diagram = build_block_diagram(desired_lateral_velocity, print_period)
 
     # Start visualizer recording
     visualizer = diagram.GetSubsystemByName('visualizer')
@@ -423,6 +426,7 @@ def Simulate2dHopper(x0, duration,
     simulator = Simulator(diagram)
     simulator.Initialize()
     
+    plant = diagram.GetSubsystemByName('plant')
     plant_context = diagram.GetMutableSubsystemContext(
         plant, simulator.get_mutable_context())
     plant_context.get_mutable_discrete_state_vector().SetFromVector(x0)
@@ -440,6 +444,9 @@ def Simulate2dHopper(x0, duration,
 
     visualizer.stop_recording()
     animation = visualizer.get_recording_as_animation()
+
+    controller = diagram.GetSubsystemByName('controller')
+    state_log = diagram.GetSubsystemByName('state_log')
 
     return plant, controller, state_log, animation
 
