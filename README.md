@@ -49,6 +49,6 @@ To start set 4, run:
 To start the project, run:
 
 ```
-docker build ./project --tag underactuated_robotics_project
-docker run -it -p 8080:8080 -v "$(pwd)/project"":"/notebooks underactuated_robotics_project
+docker build ./project --tag drake_and_tools
+docker run -it -p 8080:8080 -v "$(pwd)/project"":"/notebooks --name underactuated_robotics_project drake_and_tools
 ```
