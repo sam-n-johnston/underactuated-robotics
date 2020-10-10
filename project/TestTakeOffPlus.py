@@ -300,7 +300,6 @@ class TestTakeOffPlus(unittest.TestCase):
     # Do a test with xd and theta is not 0 and do the forward calculations to figure out
     # the location of the next apex
 
-    # A function that calcualtes the touchdown plus state based on flight
     # Then forward iterator thought the stance phase, assuming join with the floor and point mass body
 
     # Do a test that makes it maintain it's height
