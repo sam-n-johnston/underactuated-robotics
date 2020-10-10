@@ -31,10 +31,6 @@ class TestTakeOffPlus(unittest.TestCase):
         state_2[1] = 2.0000 # height
         state_2[4] = 0.5 # leg length
 
-        state_3 = np.zeros(10)
-        state_3[1] = 1.50000 # height
-        state_3[4] = 0.5 # leg length
-
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0 = state_1,
                                duration=2,
@@ -43,55 +39,29 @@ class TestTakeOffPlus(unittest.TestCase):
         # Find calculated energy at apex
         calculated_apex_energy_1 = controller.calculate_total_energy(state_1)
         calculated_apex_energy_2 = controller.calculate_total_energy(state_2)
-        calculated_apex_energy_3 = controller.calculate_total_energy(state_3)
 
         # Find simulated energy at apex
         plant_context = hopper.CreateDefaultContext()
         plant_context.get_mutable_discrete_state_vector().SetFromVector(state_1)
-        simulated_apex_energy = hopper.CalcPotentialEnergy(plant_context)
-        body = hopper.GetBodyByName('body')
-        pose = hopper.EvalBodyPoseInWorld(plant_context, body)
-        print('pose state_1')
-        print(hopper.CalcCenterOfMassPosition(plant_context))
-        print(pose.GetAsMatrix4())
-        # print(inspect.getmembers(body))
-        # print(body.default_com())
-        # print(inspect.getmembers(body.default_spatial_inertia()))
-        print(body.default_spatial_inertia().get_mass())
-        # print(inspect.getmembers(body.default_unit_inertia()))
-        # print(body.default_unit_inertia())
-        # body.SetMass(1.0)
-        print('Simulated energy apex 1:\t'  + str(simulated_apex_energy))
-        print('Calculated energy apex:\t'  + str(calculated_apex_energy_1))
+        simulated_apex_energy_1 = hopper.CalcPotentialEnergy(plant_context)
+        print('Simulated energy apex 1:\t'  + str(simulated_apex_energy_1))
+        print('Calculated energy apex 1:\t'  + str(calculated_apex_energy_1))
 
         plant_context = hopper.CreateDefaultContext()
         plant_context.get_mutable_discrete_state_vector().SetFromVector(state_2)
-        simulated_apex_energy = hopper.CalcPotentialEnergy(plant_context)
-        body = hopper.GetBodyByName('body')
-        pose = hopper.EvalBodyPoseInWorld(plant_context, body)
-        print('pose state_2')
-        print(hopper.CalcCenterOfMassPosition(plant_context))
-        print(pose.GetAsMatrix4())
-        # print(inspect.getmembers(pose))
-        print('Simulated energy apex 2:\t'  + str(simulated_apex_energy))
-        print('Calculated energy apex:\t'  + str(calculated_apex_energy_2))
+        simulated_apex_energy_2 = hopper.CalcPotentialEnergy(plant_context)
+        print('Simulated energy apex 2:\t'  + str(simulated_apex_energy_2))
+        print('Calculated energy apex 2:\t'  + str(calculated_apex_energy_2))
 
-        plant_context = hopper.CreateDefaultContext()
-        plant_context.get_mutable_discrete_state_vector().SetFromVector(state_3)
-        simulated_apex_energy = hopper.CalcPotentialEnergy(plant_context)
-        body = hopper.GetBodyByName('body')
-        pose = hopper.EvalBodyPoseInWorld(plant_context, body)
-        print('pose state_3')
-        print(hopper.CalcCenterOfMassPosition(plant_context))
-        print(pose.GetAsMatrix4())
-        # print(inspect.getmembers(pose))
-        print('Simulated energy apex 3:\t'  + str(simulated_apex_energy))
-        print('Calculated energy apex:\t'  + str(calculated_apex_energy_3))
+        change_in_simulated = simulated_apex_energy_1 - simulated_apex_energy_2
+        change_in_calculated = calculated_apex_energy_1 - calculated_apex_energy_2
 
         # Compare both values
-        # self.print_and_assert_almost_equal_simulated_and_calculated(
-        #     simulated_energy_loss, calculated_energy_loss, 'touch down energy loss'
-        # )
+        self.print_and_assert_almost_equal_simulated_and_calculated(
+            change_in_simulated, change_in_calculated,
+            'potential energy in 2 meters',
+            0
+        )
 
 
     # def test_energy_loss_by_touch_down(self):
@@ -199,10 +169,10 @@ class TestTakeOffPlus(unittest.TestCase):
             simulated_max_xd, calculated_max_xd, 'max horizontal speed (xd)'
         )
 
-    def print_and_assert_almost_equal_simulated_and_calculated(self, simulated, calculated, name):
+    def print_and_assert_almost_equal_simulated_and_calculated(self, simulated, calculated, name, digits = 2):
         print('Simulated vs calculated ' + name +': ' + '%.5f' % simulated + \
             ' VS ' + '%.5f' % calculated)
-        self.assertAlmostEqual(simulated, calculated, 2)
+        self.assertAlmostEqual(simulated, calculated, digits)
 
 
     def find_simulated_max_z(self, state_log, first_apex_index):
