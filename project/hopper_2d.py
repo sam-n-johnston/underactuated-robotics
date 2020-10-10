@@ -95,7 +95,7 @@ class Hopper2dController(VectorSystem):
 
     def potential_energy_foot(self, state):
         # Assuming foot's mass in a point mass in the middle
-        # Not quite correct, need to account for alpha and theta
+        # TODO: take into  account for alpha and theta
         is_foot_in_air = state[1] + self.body_size_height > self.hopper_leg_length
         if is_foot_in_air:
             # Assuming mass is in middle of leg
@@ -128,7 +128,9 @@ class Hopper2dController(VectorSystem):
         xd_minus_energy = self.calculate_kinetic_energy(self.m_b + self.m_f, xd_minus)
 
         # These are assuming that the leg is straight down.
+        # TODO: take into  account for alpha and theta
         potential_energy_foot = self.calculate_potential_energy(self.m_f, self.hopper_leg_length / 2.0)
+        # TODO: take into  account for alpha and theta
         potential_energy_body = self.calculate_potential_energy(self.m_b, self.hopper_leg_length - self.body_size_height)
         leg_compression_amount_minus = 0.5
         spring_potential_energy = 1.0 / 2.0 * self.K_l * leg_compression_amount_minus ** 2.0
@@ -434,12 +436,6 @@ def Simulate2dHopper(x0, duration,
         plant, simulator.get_mutable_context())
     plant_context.get_mutable_discrete_state_vector().SetFromVector(x0)
 
-    # TODO: Next steps is to evaluate the potential energy in multiple contexts
-    # to find the actual masses (top, 25% down, 50% down, etc.)
-    # Also, is the spring considered in this? I don't think so...
-    # Also, maybe there's a way with the SDF file to get the mass
-    # or another API in drake... but I can't find one
-    # Either the mass is incorrect or the gravity is incorrect...
     potential = plant.CalcPotentialEnergy(plant_context)
 
     simulator.AdvanceTo(duration)
