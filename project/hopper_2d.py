@@ -30,9 +30,6 @@ from pydrake.lcm import DrakeMockLcm
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.systems.rendering import PoseBundle
 
-# from underactuated.planar_multibody_visualizer import PlanarMultibodyVisualizer
-
-
 class Hopper2dController(VectorSystem):
     def __init__(self, hopper, 
         desired_lateral_velocity = 0.0,
@@ -414,20 +411,11 @@ def Simulate2dHopper(x0, duration,
     visualizer.start_recording()
 
     simulator = Simulator(diagram)
-    # print('controller: =========================================')
-    # print(inspect.getmembers(MultibodyPlant))
-    # print(inspect.getmembers(controller.default_model_instance))
-    # print('diagram: =========================================')
-    # print(inspect.getmembers(diagram))
     simulator.Initialize()
     
     plant_context = diagram.GetMutableSubsystemContext(
         plant, simulator.get_mutable_context())
-    # print('plant_context 1: ====================================')
-    # print(inspect.getmembers(plant_context))
     plant_context.get_mutable_discrete_state_vector().SetFromVector(x0)
-    # print('plant_context 2: ====================================')
-    # print(inspect.getmembers(plant_context))
 
     # TODO: Next steps is to evaluate the potential energy in multiple contexts
     # to find the actual masses (top, 25% down, 50% down, etc.)
@@ -437,14 +425,6 @@ def Simulate2dHopper(x0, duration,
     # Either the mass is incorrect or the gravity is incorrect...
     potential = plant.CalcPotentialEnergy(plant_context)
     body = plant.GetFrameByName('body')
-    # print('Potential: ' + str(potential))
-    # print('Body: ' + str(inspect.getmembers(plant)))
-    # print('TEsting')
-    # print(inspect.getmembers(body))
-    # print('something: ' + str(body.GetSpatialInertiaInBodyFrame()))
-    # print('something: ' + str(inspect.getmembers(body.model_instance())))
-    # print('something' + str(inspect.getmembers(body.body())))
-    # print('Pose: ' + str(body.mass()))
 
     simulator.AdvanceTo(duration)
 
@@ -452,7 +432,6 @@ def Simulate2dHopper(x0, duration,
     animation = visualizer.get_recording_as_animation()
 
     return plant, controller, state_log, animation
-
 
 def Plot():
     # dummy controller just to build the diagram for the plot
