@@ -61,7 +61,7 @@ class Hopper2dController(VectorSystem):
         # You're welcome to use these, but you probably don't need them.
         self.hopper_leg_length = 2.0
         self.body_size_height = 0.5
-        mass_factor = 2.8795349 # Based on the potential energy from plant.CalcPotentialEnergy(plant_context)
+        mass_factor = 2.81409 # Based on the potential energy from plant.CalcPotentialEnergy(plant_context)
         self.m_b = 1.0 * mass_factor
         self.m_f = 0.1 * mass_factor
         self.l_max = 0.5
@@ -425,7 +425,7 @@ def Simulate2dHopper(x0, duration,
 
     simulator = Simulator(diagram)
     simulator.Initialize()
-    
+
     plant = diagram.GetSubsystemByName('plant')
     plant_context = diagram.GetMutableSubsystemContext(
         plant, simulator.get_mutable_context())
@@ -438,12 +438,12 @@ def Simulate2dHopper(x0, duration,
     # or another API in drake... but I can't find one
     # Either the mass is incorrect or the gravity is incorrect...
     potential = plant.CalcPotentialEnergy(plant_context)
-    body = plant.GetBodyByName('body')
-    foot = plant.GetBodyByName('foot')
-    print(body.default_mass())
-    print(foot.default_mass())
-    print(plant.gravity_field().gravity_vector())
-
+    print('SOMETHING ====================')
+    print(plant.GetBodyByName('body').body_frame())
+    # print(inspect.getmembers(plant.GetBodyByName('body').body_frame()))
+    # print(plant.GetBodyByName('foot').default_mass())
+    print('SOMETHING1 ====================')
+    print(potential)
 
     simulator.AdvanceTo(duration)
 
