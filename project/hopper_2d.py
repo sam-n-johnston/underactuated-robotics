@@ -158,23 +158,10 @@ class Hopper2dController(VectorSystem):
         return touchdown_minus_state
 
     def calculate_energy_loss_by_touch_down(self, flight_phase):
-        # Get total energy minus (before impact)
-        total_energy_minus = self.calculate_total_energy(flight_phase)
+        touchdown_minus_state = self.get_touchdown_minus_state_based_on_flight_state(flight_phase)
 
-        # Get touch down minus speeds (before impact)
-        xd_minus = flight_phase[0+5]
-        xd_minus_energy = self.calculate_kinetic_energy(self.m_b + self.m_f, xd_minus)
-
-        # These are assuming that the leg is straight down.
-        # TODO: take into  account for alpha and theta
-        potential_energy_foot = self.calculate_potential_energy(self.m_f, self.hopper_leg_length / 2.0)
-        # TODO: take into  account for alpha and theta
-        potential_energy_body = self.calculate_potential_energy(self.m_b, self.hopper_leg_length - self.body_size_height)
-        leg_compression_amount_minus = 0.5
-        spring_potential_energy = 1.0 / 2.0 * self.K_l * leg_compression_amount_minus ** 2.0
-        zd_energy = total_energy_minus - xd_minus_energy - \
-            potential_energy_foot - potential_energy_body - spring_potential_energy
-        zd_minus = math.sqrt(2.0 * zd_energy / (self.m_b + self.m_f))
+        xd_minus = touchdown_minus_state[0+5]
+        zd_minus = touchdown_minus_state[1+5]
 
         kinetic_energy_lost_in_foot = self.calculate_kinetic_energy(self.m_f, xd_minus) + \
             self.calculate_kinetic_energy(self.m_f, zd_minus)
@@ -187,7 +174,7 @@ class Hopper2dController(VectorSystem):
             self.calculate_energy_loss_by_touch_down(flight_phase)
 
         # Get lift off minus speeds (before impact)
-        xd_minus = flight_phase[0+5] # Not quite right... but maybe close enough?
+        xd_minus = flight_phase[0+5]
         xd_minus_energy = self.calculate_kinetic_energy(self.m_b, xd_minus)
         # These are assuming that the leg is straight down.
         potential_energy_foot = self.calculate_potential_energy(self.m_f, self.hopper_leg_length / 2.0)
