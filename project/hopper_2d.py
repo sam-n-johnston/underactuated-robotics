@@ -96,6 +96,9 @@ class Hopper2dController(VectorSystem):
         leg_compression_amount = l_rest - state[4]
         return self.spring_potential_energy_with(leg_compression_amount)
 
+    def spring_force(self, leg_compression_amount):
+        return self.K_l * leg_compression_amount
+
     def potential_energy_body(self, state):
         return self.calculate_potential_energy(self.m_b, state[1])
 
@@ -172,8 +175,122 @@ class Hopper2dController(VectorSystem):
     def get_touchdown_plus_state_based_on_flight_state(self, flight_phase):
         return self.get_touchdown_minus_state_based_on_flight_state(flight_phase)
 
+    def get_beta(self, theta, alpha):
+        return theta + alpha
+
+    def get_beta_from_touchdown_state(self, touchdown_state):
+        return self.get_beta(theta=touchdown_state[2], alpha=touchdown_state[3])
+
+    def get_foot_position_based_state(self, state):
+        context = self.hopper.CreateDefaultContext()
+        context.get_mutable_discrete_state_vector().SetFromVector(state)
+        # Run out the forward kinematics of the robot
+        # to figure out where the foot is in world frame.
+        foot_point = np.array([0.0, 0.0, -self.hopper_leg_length / 2.0])
+        foot_point_in_world = self.hopper.CalcPointsPositions(
+            context,
+            self.foot_body_frame,
+            foot_point,
+            self.world_frame
+        )
+        return np.array([foot_point_in_world[0, 0], foot_point_in_world[2, 0]])
+
+    '''
+        Calcualtes the leg length from the tip of the foot
+        to the center of the body
+    '''
+
+    def get_leg_length(self, foot_position, body_position):
+        x_diff = foot_position[0] - body_position[0]
+        z_diff = foot_position[1] - body_position[1]
+        distance = math.sqrt(x_diff ** 2.0 + z_diff ** 2.0)
+        return distance
+
     def get_liftoff_minus_state_based_on_flight_state(self, flight_phase):
-        return
+        touchdown_minus_state = self.get_touchdown_minus_state_based_on_flight_state(
+            flight_phase)
+        timestep = 0.001
+        current_time = 0.0
+        current_state = np.copy(touchdown_minus_state)
+        foot_position = self.get_foot_position_based_state(
+            touchdown_minus_state)
+        found_liftoff_minus_state = False
+        f_gravity_body = self.m_b * self.gravity
+        f_gravity_foot = self.m_f * self.gravity
+
+        while not found_liftoff_minus_state and current_time < 2.0:
+            l_rest = 1.0
+            spring_force = self.spring_force(l_rest - current_state[4])
+            beta = self.get_beta(
+                theta=current_state[2], alpha=current_state[3])
+
+            # Spring is pushing back only the body, not the foot's mass
+            f_gravity_along_leg_frame = f_gravity_body * math.cos(beta)
+            leg_force = spring_force - f_gravity_along_leg_frame
+
+            acceleration_along_leg_frame = leg_force / self.m_b
+
+            # Calculate rotational acceleration
+            # TODO: Fix this to send in the position of the center of the body
+            body_position = np.copy(current_state[0:2])
+            body_position[1] = body_position[1] - self.body_size_height / 2.0
+            leg_length = self.get_leg_length(
+                foot_position, body_position)
+
+            f_gravity_body_perpendicular_to_leg_frame = f_gravity_body * \
+                math.sin(beta)
+            f_gravity_foot_perpendicular_to_leg_frame = f_gravity_foot * \
+                math.sin(beta)
+
+            f_gravity_foot_torque = f_gravity_foot_perpendicular_to_leg_frame * \
+                self.hopper_leg_length / 2.0
+            f_gravity_body_torque = f_gravity_body_perpendicular_to_leg_frame * leg_length
+
+            f_gravity_torque = f_gravity_body_torque + f_gravity_foot_torque
+            acceleration_perpendicular_to_leg_frame = f_gravity_torque / leg_length
+
+            #  Calculate new acceleration in x & z frames (with all forces)
+            x_acceleration_along_leg_frame = acceleration_along_leg_frame * \
+                math.sin(beta)
+            z_acceleration_along_leg_frame = acceleration_along_leg_frame * \
+                math.cos(beta)
+            x_acceleration_perpendicular_to_leg_frame = acceleration_perpendicular_to_leg_frame * \
+                math.cos(beta)
+            z_acceleration_perpendicular_to_leg_frame = acceleration_perpendicular_to_leg_frame * \
+                math.sin(beta)
+
+            x_acceleration = x_acceleration_along_leg_frame + \
+                x_acceleration_perpendicular_to_leg_frame
+            z_acceleration = z_acceleration_along_leg_frame + \
+                z_acceleration_perpendicular_to_leg_frame
+
+            # Set new speeds
+            current_state[0+5] = current_state[0+5] + x_acceleration * timestep
+            current_state[1+5] = current_state[1+5] + z_acceleration * timestep
+
+            # Set new positions
+            current_state[0] = current_state[0] + current_state[0+5] * timestep
+            current_state[1] = current_state[1] + current_state[1+5] * timestep
+
+            # TODO: Fix this to send in the position of the center of the body
+            body_position = np.copy(current_state[0:2])
+            body_position[1] = body_position[1] - self.body_size_height / 2.0
+            leg_length = self.get_leg_length(
+                foot_position, body_position)
+
+            current_state[4] = leg_length - \
+                self.hopper_leg_length / 2.0 + self.body_size_height / 2.0
+
+            current_time = current_time + timestep
+
+            if current_state[4] >= 0.5:
+                print('\nIn the air now!')
+                found_liftoff_minus_state = True
+
+        if not found_liftoff_minus_state:
+            raise Exception('The robot never left the ground')
+
+        return current_state
 
     def calculate_energy_loss_by_touch_down(self, flight_phase):
         touchdown_minus_state = self.get_touchdown_minus_state_based_on_flight_state(
@@ -239,11 +356,12 @@ class Hopper2dController(VectorSystem):
         return lift_off_plus_state[0+5]
 
     def is_foot_in_contact(self, state):
-        # Foot's mass might be a point mass in the MIDDLE!
-        # Not quite correct, need to account for alpha and theta
-        if state[1] + self.body_size_height - self.hopper_leg_length / 2.0 > 1.0:
-            return False
-        return True
+        foot_point_in_world = self.get_foot_position_based_state(state)
+        # print('foot_point_in_world')
+        # print(foot_point_in_world)
+        in_contact = foot_point_in_world[1] <= 0.01
+
+        return in_contact
 
     def calculate_apex_z_based_off_liftoff_plus(self, lift_off_plus_state):
         lift_off_zd = lift_off_plus_state[1+5]
