@@ -1,4 +1,5 @@
 import unittest
+import math
 import numpy as np
 import inspect
 from hopper_2d import Simulate2dHopper
@@ -249,6 +250,26 @@ class TestTakeOffPlus(unittest.TestCase):
             state)
         self.assertAlmostEqual(
             simulated_foot_position[1], expected_foot_height, 1)
+
+    def test_foot_position_theta(self):
+        state = np.zeros(10)
+        state[1] = 1.5      # height
+        state[2] = 1.57     # theta
+        state[4] = 0.5      # l distance
+        expected_foot_x = -1.5
+        expected_foot_z = state[1]
+
+        hopper, controller, state_log, animation = Simulate2dHopper(x0=state,
+                                                                    duration=1,
+                                                                    desired_lateral_velocity=0.0)
+
+        simulated_foot_position = controller.get_foot_position_based_state(
+            state)
+
+        self.assertAlmostEqual(
+            simulated_foot_position[0], expected_foot_x, 1)
+        self.assertAlmostEqual(
+            simulated_foot_position[1], expected_foot_z, 1)
 
     def test_liftoff_minus_state(self):
         apex_state = np.zeros(10)
