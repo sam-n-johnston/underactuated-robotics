@@ -172,8 +172,6 @@ class TestTakeOffPlus(unittest.TestCase):
             state_log, controller)
         simulated_state_at_touchdown_minus = state_log.data(
         )[:, simulated_state_index_at_touchdown_minus]
-        print('\nFOUND TOUCHDOWN MINUS STATE')
-        print(simulated_state_at_touchdown_minus)
 
         # Get calcualted touchdown minus state
         calculated_state_index_at_touchdown_minus = controller.get_touchdown_minus_state_based_on_flight_state(
@@ -294,11 +292,39 @@ class TestTakeOffPlus(unittest.TestCase):
         print('\nCalculated liftoff minus state:')
         print(calculated_state_at_liftoff_minus)
         print('\nSimulated liftoff minus state:')
-        print(simulated_state_at_liftoff_minus)
+        print(state_log.data(
+        )[:, simulated_state_index_at_liftoff_minus])
 
-        # self.assertAlmostEqual(
-        #     simulated_state_at_liftoff_minus, calculated_state_at_liftoff_minus, 2
-        # )
+        self.assertAlmostEqual(
+            simulated_state_at_liftoff_minus[0],
+            calculated_state_at_liftoff_minus[0],
+            2,
+            'Liftoff x'
+        )
+        self.assertAlmostEqual(
+            simulated_state_at_liftoff_minus[1],
+            calculated_state_at_liftoff_minus[1],
+            2,
+            'Liftoff z'
+        )
+        self.assertAlmostEqual(
+            simulated_state_at_liftoff_minus[0+5],
+            calculated_state_at_liftoff_minus[0+5],
+            2,
+            'Liftoff xd'
+        )
+        self.assertAlmostEqual(
+            simulated_state_at_liftoff_minus[1+5],
+            calculated_state_at_liftoff_minus[1+5],
+            0,
+            'Liftoff zd'
+        )
+        self.assertAlmostEqual(
+            simulated_state_at_liftoff_minus[4],
+            calculated_state_at_liftoff_minus[4],
+            1,
+            'Liftoff l'
+        )
 
     def apex_z_and_xd_based_off_liftoff_plus(self, lift_off_plus_state):
         # Use Simulate2dHopper to simulate
@@ -390,8 +416,8 @@ class TestTakeOffPlus(unittest.TestCase):
 
         while liftoff_minus_index == -1 and index < number_of_states:
             index = index + 1
-            if controller.is_foot_in_contact(state_log.data()[:, index]):
-                liftoff_minus_index = index
+            if not controller.is_foot_in_contact(state_log.data()[:, index]):
+                liftoff_minus_index = index - 1
 
         return liftoff_minus_index
 

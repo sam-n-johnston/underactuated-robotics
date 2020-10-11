@@ -105,6 +105,7 @@ class Hopper2dController(VectorSystem):
     def potential_energy_foot(self, state):
         # Assuming foot's mass in a point mass in the middle
         # TODO: take into  account for alpha and theta
+        # (use the get_foot_position_based_state or similar)
         is_foot_in_air = state[1] + \
             self.body_size_height > self.hopper_leg_length
         if is_foot_in_air:
@@ -140,8 +141,10 @@ class Hopper2dController(VectorSystem):
 
         # Potential energy
         # TODO: take into  account for alpha and theta
+        # (use the get_foot_position_based_state or similar)
         body_z_touchdown_minus = self.hopper_leg_length - self.body_size_height
         # TODO: take into  account for alpha and theta
+        # (use the get_foot_position_based_state or similar)
         foot_z_touchdown_minus = self.hopper_leg_length / 2.0
 
         potential_energy_foot = self.calculate_potential_energy(
@@ -195,6 +198,20 @@ class Hopper2dController(VectorSystem):
         )
         return np.array([foot_point_in_world[0, 0], foot_point_in_world[2, 0]])
 
+    def get_body_position_from(self, state):
+        context = self.hopper.CreateDefaultContext()
+        context.get_mutable_discrete_state_vector().SetFromVector(state)
+        # Run out the forward kinematics of the robot
+        # to figure out where the body is in world frame.
+        body_point = np.array([0.0, 0.0, 0.0])
+        body_point_in_world = self.hopper.CalcPointsPositions(
+            context,
+            self.foot_body_frame,
+            body_point,
+            self.world_frame
+        )
+        return np.array([body_point_in_world[0, 0], body_point_in_world[2, 0]])
+
     '''
         Calcualtes the leg length from the tip of the foot
         to the center of the body
@@ -209,7 +226,7 @@ class Hopper2dController(VectorSystem):
     def get_liftoff_minus_state_based_on_flight_state(self, flight_phase):
         touchdown_minus_state = self.get_touchdown_minus_state_based_on_flight_state(
             flight_phase)
-        timestep = 0.001
+        timestep = 0.0005
         current_time = 0.0
         current_state = np.copy(touchdown_minus_state)
         foot_position = self.get_foot_position_based_state(
@@ -233,7 +250,6 @@ class Hopper2dController(VectorSystem):
             # Calculate rotational acceleration
             # TODO: Fix this to send in the position of the center of the body
             body_position = np.copy(current_state[0:2])
-            body_position[1] = body_position[1] - self.body_size_height / 2.0
             leg_length = self.get_leg_length(
                 foot_position, body_position)
 
@@ -274,12 +290,10 @@ class Hopper2dController(VectorSystem):
 
             # TODO: Fix this to send in the position of the center of the body
             body_position = np.copy(current_state[0:2])
-            body_position[1] = body_position[1] - self.body_size_height / 2.0
             leg_length = self.get_leg_length(
                 foot_position, body_position)
 
-            current_state[4] = leg_length - \
-                self.hopper_leg_length / 2.0 + self.body_size_height / 2.0
+            current_state[4] = leg_length - self.hopper_leg_length / 2.0
 
             current_time = current_time + timestep
 
