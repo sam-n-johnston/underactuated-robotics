@@ -171,6 +171,20 @@ class Hopper2dController(VectorSystem):
 
         return kinetic_energy_lost_in_foot
 
+    def controller(self):
+        # 1. For the desired height & speed, calculate liftoff angle => 
+        #      Check if this assumption is correct. I'm assuming that liftoff angle 
+        #      will be the same as the liftoff speed vector of the robot. I can verify
+        #      at least part of this with another test where the robot has an initial leg
+        #      position and horizontal speed. 
+        # 2. Estimate stance energy loss and set l_rest actuation
+        #      Check if I need to refine the energy loss if the touchdown and liftoff
+        #      are not with the leg straight down
+        # 3. Find the correct leg angle for touchdown
+        #      Calculate forward in time to see if the liftoff angle will be correct
+        # 4. Repeat steps 2 and 3 until convergence (since one affects the other)
+        return
+
     def calculate_energy_loss_by_lift_off(self, flight_phase):
         # Get total energy minus (before impact)
         total_energy_minus = self.calculate_total_energy(flight_phase) - \
