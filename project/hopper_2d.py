@@ -91,7 +91,7 @@ class Hopper2dController(VectorSystem):
 
         # Passive spring force
         leg_compression_amount = l_rest - state[4]
-        return spring_potential_energy_with(leg_compression_amount)
+        return self.spring_potential_energy_with(leg_compression_amount)
 
     def potential_energy_body(self, state):
         return self.calculate_potential_energy(self.m_b, state[1])
@@ -162,6 +162,9 @@ class Hopper2dController(VectorSystem):
 
     def get_touchdown_plus_state_based_on_flight_state(self, flight_phase):
         return self.get_touchdown_minus_state_based_on_flight_state(flight_phase)
+
+    def get_liftoff_minus_state_based_on_flight_state(self, flight_phase):
+        return
 
     def calculate_energy_loss_by_touch_down(self, flight_phase):
         touchdown_minus_state = self.get_touchdown_minus_state_based_on_flight_state(flight_phase)
@@ -329,7 +332,7 @@ class Hopper2dController(VectorSystem):
 
         torque = self.PD_controller(X, in_contact, in_air)
                 
-        return torque
+        return 0.0 # torque
       
     def ChooseSpringRestLength(self, X):
         ''' Given the system state X,
@@ -444,8 +447,8 @@ def build_block_diagram(desired_lateral_velocity = 0.0, print_period = 0.0):
     # Create visualizer
     visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
         scene_graph,
-        xlim=[-1, 1],
-        ylim=[-.2, 2.5],
+        xlim=[-1, 10],
+        ylim=[-.2, 4.5],
         show=False
     ))
     builder.Connect(scene_graph.get_pose_bundle_output_port(), visualizer.get_input_port(0))

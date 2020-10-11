@@ -180,8 +180,8 @@ class TestTakeOffPlus(unittest.TestCase):
         apex_state = np.zeros(10)
         apex_state[1] = 3.5 # height
         apex_state[4] = 0.5 # l distance
-        apex_state[1+5] = 0.5 # zd
         apex_state[0+5] = 0.5 # xd
+        apex_state[1+5] = 0.5 # zd
 
         self.touchdown_plus_state_based_on_flight_state(apex_state)
 
@@ -206,6 +206,28 @@ class TestTakeOffPlus(unittest.TestCase):
                 'state at touchdown minus [' + str(i) + ']',
                 1 if i < 8 else 0
             )
+
+    def test_liftoff_minus_state(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5 # height
+        apex_state[4] = 0.5 # l distance
+        apex_state[0+5] = 1.5 # xd
+
+        # Use Simulate2dHopper to simulate
+        hopper, controller, state_log, animation = Simulate2dHopper(x0 = apex_state,
+                               duration=2,
+                               desired_lateral_velocity = 0.0)
+
+        # Get simulated liftoff minus state
+        simulated_state_index_at_liftoff_minus = self.find_simulated_state_index_at_liftoff_minus(state_log, controller)
+        simulated_state_at_liftoff_minus = state_log.data()[:, simulated_state_index_at_liftoff_minus]
+
+        # Get calcualted touchdown minus state
+        calculated_state_at_liftoff_minus = controller.get_liftoff_minus_state_based_on_flight_state(apex_state)
+
+        print('\nLiftoff minus state: \t' + str(simulated_state_at_liftoff_minus))
+
+        self.assertAlmostEqual(simulated_state_at_liftoff_minus, calculated_state_at_liftoff_minus, 2)
 
     def apex_z_and_xd_based_off_liftoff_plus(self, lift_off_plus_state):
         # Use Simulate2dHopper to simulate
@@ -283,6 +305,19 @@ class TestTakeOffPlus(unittest.TestCase):
                 touchdown_minus_index = index
 
         return touchdown_minus_index
+
+    def find_simulated_state_index_at_liftoff_minus(self, state_log, controller):
+        # Start at touchdown plus
+        index = self.find_simulated_state_index_at_touchdown_plus(state_log, controller)
+        liftoff_minus_index = -1
+        number_of_states = len(state_log.data()[1,:])
+
+        while liftoff_minus_index == -1 and index < number_of_states:
+            index = index + 1
+            if controller.is_foot_in_contact(state_log.data()[:, index]):
+                liftoff_minus_index = index
+
+        return liftoff_minus_index
 
     def find_first_bottom_in_simulation(self, state_log):
         simulated_zs = state_log.data()[1, :]
