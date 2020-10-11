@@ -11,9 +11,9 @@ import numpy as np
 from pydrake.all import (
     MultibodyPlant,
     PlanarSceneGraphVisualizer,
-    DiagramBuilder, 
+    DiagramBuilder,
     Simulator, VectorSystem,
-    ConstantVectorSource, 
+    ConstantVectorSource,
     SignalLogger,
     AbstractValue,
     Parser,
@@ -30,20 +30,21 @@ from pydrake.lcm import DrakeMockLcm
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.systems.rendering import PoseBundle
 
+
 class Hopper2dController(VectorSystem):
-    def __init__(self, hopper, 
-        desired_lateral_velocity = 0.0,
-        print_period = 0.0):
+    def __init__(self, hopper,
+                 desired_lateral_velocity=0.0,
+                 print_period=0.0):
         # hopper = a rigid body tree representing the 1D hopper
         # desired_lateral_velocity = How fast should the controller
         #  aim to run sideways?
         # print_period = print to console to indicate sim progress
         #  if nonzero
         VectorSystem.__init__(self,
-            10, # 10 inputs: x, z, theta, alpha, l, and their derivatives
-            2) # 2 outputs: Torque on thigh, and force on the leg extension
-               #  link. (The passive spring for on the leg is calculated as
-               #  part of this output.)
+                              10,  # 10 inputs: x, z, theta, alpha, l, and their derivatives
+                              2)  # 2 outputs: Torque on thigh, and force on the leg extension
+        #  link. (The passive spring for on the leg is calculated as
+        #  part of this output.)
         self.hopper = hopper
         self.desired_lateral_velocity = desired_lateral_velocity
         self.print_period = print_period
@@ -52,7 +53,7 @@ class Hopper2dController(VectorSystem):
         # self.foot_body_index = hopper.GetFrameByName("foot").get_body_index()
         self.foot_body_frame = hopper.GetFrameByName("foot")
         self.world_frame = hopper.world_frame()
-        
+
         # The context for the hopper
         self.plant_context = self.hopper.CreateDefaultContext()
 
@@ -61,9 +62,11 @@ class Hopper2dController(VectorSystem):
         # You're welcome to use these, but you probably don't need them.
         self.hopper_leg_length = 2.0
         self.body_size_height = 0.5
-        self.total_mass = 3.095499 # Based on the potential energy from plant.CalcPotentialEnergy(plant_context)
-        mass_factor = 2.81409 # Based on the potential energy from plant.CalcPotentialEnergy(plant_context)
-        self.m_f = 0.1 # If I increase this mass, it decreases the energy loss... this doesn't make any sense
+        # Based on the potential energy from plant.CalcPotentialEnergy(plant_context)
+        self.total_mass = 3.095499
+        # Based on the potential energy from plant.CalcPotentialEnergy(plant_context)
+        mass_factor = 2.81409
+        self.m_f = 0.1  # If I increase this mass, it decreases the energy loss... this doesn't make any sense
         self.m_b = self.total_mass - self.m_f
         self.l_max = 0.5
         self.gravity = 9.81
@@ -99,10 +102,12 @@ class Hopper2dController(VectorSystem):
     def potential_energy_foot(self, state):
         # Assuming foot's mass in a point mass in the middle
         # TODO: take into  account for alpha and theta
-        is_foot_in_air = state[1] + self.body_size_height > self.hopper_leg_length
+        is_foot_in_air = state[1] + \
+            self.body_size_height > self.hopper_leg_length
         if is_foot_in_air:
             # Assuming mass is in middle of leg
-            foot_height = state[1] + self.body_size_height - self.hopper_leg_length / 2.0
+            foot_height = state[1] + self.body_size_height - \
+                self.hopper_leg_length / 2.0
         else:
             foot_height = self.hopper_leg_length / 2.0
 
@@ -127,7 +132,8 @@ class Hopper2dController(VectorSystem):
 
         # Get touch down minus speeds (before impact)
         xd_flight = flight_phase[0+5]
-        xd_flight_energy = self.calculate_kinetic_energy(self.m_b + self.m_f, xd_flight)
+        xd_flight_energy = self.calculate_kinetic_energy(
+            self.m_b + self.m_f, xd_flight)
 
         # Potential energy
         # TODO: take into  account for alpha and theta
@@ -135,12 +141,15 @@ class Hopper2dController(VectorSystem):
         # TODO: take into  account for alpha and theta
         foot_z_touchdown_minus = self.hopper_leg_length / 2.0
 
-        potential_energy_foot = self.calculate_potential_energy(self.m_f, foot_z_touchdown_minus)
-        potential_energy_body = self.calculate_potential_energy(self.m_b, body_z_touchdown_minus)
+        potential_energy_foot = self.calculate_potential_energy(
+            self.m_f, foot_z_touchdown_minus)
+        potential_energy_body = self.calculate_potential_energy(
+            self.m_b, body_z_touchdown_minus)
 
         # Spring energy
         leg_compression_amount_minus = 0.5
-        spring_potential_energy = self.spring_potential_energy_with(leg_compression_amount_minus)
+        spring_potential_energy = self.spring_potential_energy_with(
+            leg_compression_amount_minus)
 
         # Kinectic energy
         zd_energy = total_energy_flight - xd_flight_energy - \
@@ -167,7 +176,8 @@ class Hopper2dController(VectorSystem):
         return
 
     def calculate_energy_loss_by_touch_down(self, flight_phase):
-        touchdown_minus_state = self.get_touchdown_minus_state_based_on_flight_state(flight_phase)
+        touchdown_minus_state = self.get_touchdown_minus_state_based_on_flight_state(
+            flight_phase)
 
         xd_minus = touchdown_minus_state[0+5]
         zd_minus = touchdown_minus_state[1+5]
@@ -178,11 +188,11 @@ class Hopper2dController(VectorSystem):
         return kinetic_energy_lost_in_foot
 
     def controller(self):
-        # 1. For the desired height & speed, calculate liftoff angle => 
-        #      Check if this assumption is correct. I'm assuming that liftoff angle 
+        # 1. For the desired height & speed, calculate liftoff angle =>
+        #      Check if this assumption is correct. I'm assuming that liftoff angle
         #      will be the same as the liftoff speed vector of the robot. I can verify
         #      at least part of this with another test where the robot has an initial leg
-        #      position and horizontal speed. 
+        #      position and horizontal speed.
         # 2. Estimate stance energy loss and set l_rest actuation
         #      Check if I need to refine the energy loss if the touchdown and liftoff
         #      are not with the leg straight down
@@ -200,8 +210,10 @@ class Hopper2dController(VectorSystem):
         xd_minus = flight_phase[0+5]
         xd_minus_energy = self.calculate_kinetic_energy(self.m_b, xd_minus)
         # These are assuming that the leg is straight down.
-        potential_energy_foot = self.calculate_potential_energy(self.m_f, self.hopper_leg_length / 2.0)
-        potential_energy_body = self.calculate_potential_energy(self.m_b, self.hopper_leg_length - self.body_size_height)
+        potential_energy_foot = self.calculate_potential_energy(
+            self.m_f, self.hopper_leg_length / 2.0)
+        potential_energy_body = self.calculate_potential_energy(
+            self.m_b, self.hopper_leg_length - self.body_size_height)
         # TODO: use correct value
         l_rest = 1.0
         # Passive spring force
@@ -218,7 +230,7 @@ class Hopper2dController(VectorSystem):
         # Calculate energy plus (after impact)
         total_energy_plus = self.calculate_kinetic_energy(self.m_b + self.m_f, xd_plus) + \
             self.calculate_kinetic_energy(self.m_b + self.m_f, zd_plus) + \
-                potential_energy_foot + potential_energy_body + sprint_potential_energy
+            potential_energy_foot + potential_energy_body + sprint_potential_energy
 
         # Calculate energy loss
         return total_energy_minus - total_energy_plus
@@ -237,16 +249,18 @@ class Hopper2dController(VectorSystem):
         lift_off_zd = lift_off_plus_state[1+5]
         apex_z = lift_off_zd ** 2 / (2 * self.gravity)
         return apex_z + lift_off_plus_state[1]
-         
+
     def calculate_moment_of_inertia(self):
         return self.m_f * self.l_max ** 2.
 
     def calculate_lift_off_angle(self):
         return math.atan2(self.desired_lateral_velocity, (2 * self.gravity * self.desired_height) ** (1. / 2.))
-        
+
     def calculate_time_required_btwn_lo_and_td(self):
-        lift_off_height = math.cos(self.calculate_lift_off_angle()) * self.hopper_leg_length 
-        intial_vertical_speed = -(2 * self.gravity * self.desired_height) ** (1. / 2.)
+        lift_off_height = math.cos(
+            self.calculate_lift_off_angle()) * self.hopper_leg_length
+        intial_vertical_speed = - \
+            (2 * self.gravity * self.desired_height) ** (1. / 2.)
         final_vertical_speed = -intial_vertical_speed
         return (final_vertical_speed - intial_vertical_speed) / self.gravity
 
@@ -265,9 +279,9 @@ class Hopper2dController(VectorSystem):
         K1 = 1.2
         K2 = 4.
         K3 = 2.
-        
+
         return K1 * (xd - xd_desired) + K2 * (theta - theta_desired) + K3 * thetad
-    
+
     def get_desired_alpha_in_air(self, X):
         x, z, theta, alpha, l = X[0:5]
         xd, zd, thetad, alphad, ld = X[5:10]
@@ -275,7 +289,7 @@ class Hopper2dController(VectorSystem):
         mf = self.m_f
         l = self.hopper_leg_length
         K_err = 0.1
-        
+
         x_err = K_err * self.get_x_err(X)
         opposing_side = ((mb + mf) * x_err) / (l * mb)
 
@@ -288,16 +302,16 @@ class Hopper2dController(VectorSystem):
         desired_alpha = - math.asin(opposing_side) - theta
         self.desired_alpha_array.append(desired_alpha)
         return desired_alpha
-    
+
     def get_desired_alpha_in_contact(self, X):
         x, z, theta, alpha, l = X[0:5]
-        
+
         return alpha + theta
-        
+
     def PD_controller(self, X, in_contact, in_air):
         x, z, theta, alpha, l = X[0:5]
         xd, zd, thetad, alphad, ld = X[5:10]
-        
+
         if in_contact:
             Kp = -20.
             Kv = -5.
@@ -310,30 +324,30 @@ class Hopper2dController(VectorSystem):
             return 0.
 
         return Kp * (alpha - alpha_desired) + Kv * (alphad)
-        
+
     def ChooseThighTorque(self, X):
         ''' Given the system state X,
             returns a (scalar) leg angle torque to exert. '''
         x, z, theta, alpha, l = X[0:5]
         xd, zd, thetad, alphad, ld = X[5:10]
-        
+
         # Run out the forward kinematics of the robot
         # to figure out where the foot is in world frame.
         foot_point = np.array([0.0, 0.0, -self.hopper_leg_length])
-        foot_point_in_world = self.hopper.CalcPointsPositions(self.plant_context, 
-                              self.foot_body_frame, foot_point, self.world_frame)
+        foot_point_in_world = self.hopper.CalcPointsPositions(self.plant_context,
+                                                              self.foot_body_frame, foot_point, self.world_frame)
         in_contact = foot_point_in_world[2] <= 0.01
         in_air = foot_point_in_world[2] >= 0.1
-        
+
         # It's all yours from here.
         # Implement a controller that:
         #  - Controls xd to self.desired_lateral_velocity
         #  - Attempts to keep the body steady (theta = 0)
 
         torque = self.PD_controller(X, in_contact, in_air)
-                
-        return 0.0 # torque
-      
+
+        return 0.0  # torque
+
     def ChooseSpringRestLength(self, X):
         ''' Given the system state X,
             returns a (scalar) rest length of the leg spring.
@@ -347,10 +361,10 @@ class Hopper2dController(VectorSystem):
         # Run out the forward kinematics of the robot
         # to figure out where the foot is in world frame.
         foot_point = np.array([0.0, 0.0, -self.hopper_leg_length])
-        foot_point_in_world = self.hopper.CalcPointsPositions(self.plant_context, 
-                              self.foot_body_frame, foot_point, self.world_frame)
+        foot_point_in_world = self.hopper.CalcPointsPositions(self.plant_context,
+                                                              self.foot_body_frame, foot_point, self.world_frame)
         in_contact = foot_point_in_world[2] <= 0.01
-        
+
         # Feel free to play with these values!
         # These should work pretty well for this problem set,
         # though.
@@ -368,7 +382,7 @@ class Hopper2dController(VectorSystem):
         else:
             # Keep l_rest large to make sure the leg
             # is pushed back out to full extension quickly.
-            l_rest = 1.0 
+            l_rest = 1.0
 
         # See "Hopping in Legged Systems-Modeling and
         # Simulation for the Two-Dimensional One-Legged Case"
@@ -386,29 +400,32 @@ class Hopper2dController(VectorSystem):
         # here is the state of the hopper.
         # Empty now
         if (self.print_period and
-            context.get_time() - self.last_print_time >= self.print_period):
+                context.get_time() - self.last_print_time >= self.print_period):
             print("t: ", context.get_time())
             self.last_print_time = context.get_time()
-        
+
         # Update the internal context
         plant = self.hopper
         context = self.plant_context
         x_ref = plant.GetMutablePositionsAndVelocities(context)
         x_ref[:] = u
-        
+
         # OK
-        l_rest = 1.0 # self.ChooseSpringRestLength(X = u)
+        l_rest = 1.0  # self.ChooseSpringRestLength(X = u)
 
         # Passive spring force
         leg_compression_amount = l_rest - u[4]
 
-        y[:] = [  self.ChooseThighTorque(X = u),
-                  self.K_l * leg_compression_amount]
+        y[:] = [self.ChooseThighTorque(X=u),
+                self.K_l * leg_compression_amount]
+
 
 '''
 Builds the block diagram for the 2d hopper
 '''
-def build_block_diagram(desired_lateral_velocity = 0.0, print_period = 0.0):
+
+
+def build_block_diagram(desired_lateral_velocity=0.0, print_period=0.0):
     builder = DiagramBuilder()
 
     # Build the plant
@@ -431,17 +448,19 @@ def build_block_diagram(desired_lateral_velocity = 0.0, print_period = 0.0):
     # Create a logger to log at 30hz
     state_dim = plant.num_positions() + plant.num_velocities()
     state_log = builder.AddSystem(SignalLogger(state_dim))
-    state_log.DeclarePeriodicPublish(0.0333, 0.0) # 30hz logging
+    state_log.DeclarePeriodicPublish(0.0333, 0.0)  # 30hz logging
     builder.Connect(plant.get_state_output_port(), state_log.get_input_port(0))
     state_log.set_name('state_log')
 
     # The controller
     controller = builder.AddSystem(
         Hopper2dController(plant,
-            desired_lateral_velocity = desired_lateral_velocity,
-            print_period = print_period))
-    builder.Connect(plant.get_state_output_port(), controller.get_input_port(0))
-    builder.Connect(controller.get_output_port(0), plant.get_actuation_input_port())
+                           desired_lateral_velocity=desired_lateral_velocity,
+                           print_period=print_period))
+    builder.Connect(plant.get_state_output_port(),
+                    controller.get_input_port(0))
+    builder.Connect(controller.get_output_port(
+        0), plant.get_actuation_input_port())
     controller.set_name('controller')
 
     # Create visualizer
@@ -451,12 +470,14 @@ def build_block_diagram(desired_lateral_velocity = 0.0, print_period = 0.0):
         ylim=[-.2, 4.5],
         show=False
     ))
-    builder.Connect(scene_graph.get_pose_bundle_output_port(), visualizer.get_input_port(0))
+    builder.Connect(scene_graph.get_pose_bundle_output_port(),
+                    visualizer.get_input_port(0))
     visualizer.set_name('visualizer')
 
     diagram = builder.Build()
 
     return diagram
+
 
 '''
 Simulates a 2d hopper from initial conditions x0 (which
@@ -465,9 +486,11 @@ targeting a specified lateral velocity and printing to the
 console every print_period seconds (as an indicator of
 progress, only if print_period is nonzero).
 '''
+
+
 def Simulate2dHopper(x0, duration,
-        desired_lateral_velocity = 0.0,
-        print_period = 0.0):
+                     desired_lateral_velocity=0.0,
+                     print_period=0.0):
 
     # The diagram, plant and contorller
     diagram = build_block_diagram(desired_lateral_velocity, print_period)
@@ -496,6 +519,7 @@ def Simulate2dHopper(x0, duration,
 
     return plant, controller, state_log, animation
 
+
 def Plot():
     # dummy controller just to build the diagram for the plot
     preload_controller = MatrixGain(np.zeros((1, 4)))
@@ -507,11 +531,12 @@ def Plot():
     diagram.set_name('Block Diagram of the One-Dimensional Hopper')
     plot_system_graphviz(diagram)
 
+
 if __name__ == '__main__':
     x0 = np.zeros(10)
     x0[1] = 2
     x0[4] = 0.5
-    hopper, controller, state_log = Simulate2dHopper(x0 = x0,
-                               duration=20,
-                               desired_lateral_velocity = 0.5,
-                               print_period = 1.0)
+    hopper, controller, state_log = Simulate2dHopper(x0=x0,
+                                                     duration=20,
+                                                     desired_lateral_velocity=0.5,
+                                                     print_period=1.0)
