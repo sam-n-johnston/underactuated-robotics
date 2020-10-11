@@ -289,12 +289,6 @@ class TestTakeOffPlus(unittest.TestCase):
         calculated_state_at_liftoff_minus = controller.get_liftoff_minus_state_based_on_flight_state(
             apex_state)
 
-        print('\nCalculated liftoff minus state:')
-        print(calculated_state_at_liftoff_minus)
-        print('\nSimulated liftoff minus state:')
-        print(state_log.data(
-        )[:, simulated_state_index_at_liftoff_minus])
-
         self.assertAlmostEqual(
             simulated_state_at_liftoff_minus[0],
             calculated_state_at_liftoff_minus[0],
