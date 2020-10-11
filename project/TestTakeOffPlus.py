@@ -271,8 +271,8 @@ class TestTakeOffPlus(unittest.TestCase):
 
     def test_liftoff_minus_state(self):
         apex_state = np.zeros(10)
-        apex_state[1] = 3.5  # height
-        apex_state[4] = 0.5  # l distance
+        apex_state[1] = 3.5    # height
+        apex_state[4] = 0.5    # l distance
 
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
