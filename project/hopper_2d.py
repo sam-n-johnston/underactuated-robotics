@@ -82,13 +82,16 @@ class Hopper2dController(VectorSystem):
     def calculate_potential_energy(self, mass, height):
         return self.gravity * mass * height
 
+    def spring_potential_energy_with(self, leg_compression_amount):
+        return 1.0 / 2.0 * self.K_l * leg_compression_amount ** 2.0
+
     def spring_potential_energy(self, state):
         # TODO: use correct value
         l_rest = 1.0
 
         # Passive spring force
         leg_compression_amount = l_rest - state[4]
-        return 1.0 / 2.0 * self.K_l * leg_compression_amount ** 2.0
+        return spring_potential_energy_with(leg_compression_amount)
 
     def potential_energy_body(self, state):
         return self.calculate_potential_energy(self.m_b, state[1])
@@ -137,7 +140,7 @@ class Hopper2dController(VectorSystem):
 
         # Spring energy
         leg_compression_amount_minus = 0.5
-        spring_potential_energy = 1.0 / 2.0 * self.K_l * leg_compression_amount_minus ** 2.0
+        spring_potential_energy = self.spring_potential_energy_with(leg_compression_amount_minus)
 
         # Kinectic energy
         zd_energy = total_energy_flight - xd_flight_energy - \
