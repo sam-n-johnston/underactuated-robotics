@@ -208,6 +208,7 @@ class Hopper2dController(VectorSystem):
         context.get_mutable_discrete_state_vector().SetFromVector(state)
         # Run out the forward kinematics of the robot
         # to figure out where the body is in world frame.
+        # body_point = np.array([0.0, 0.0, 0.0])
         body_point = np.array([0.0, 0.0, self.body_size_height / 2.0])
         body_point_in_world = self.hopper.CalcPointsPositions(
             context,
@@ -255,7 +256,6 @@ class Hopper2dController(VectorSystem):
             # Calculate rotational acceleration
             body_position = self.get_body_position_from(
                 current_state)
-            # body_position = np.array([current_state[0], current_state[1]])
             # Maybe the leg length is not correct <= TODO: Let's test this, I think it's the culprit.
             leg_length = self.get_leg_length(foot_position, body_position)
 
@@ -272,7 +272,17 @@ class Hopper2dController(VectorSystem):
             f_gravity_body_torque = f_gravity_body_perpendicular_to_leg_frame * leg_length
 
             f_gravity_torque = f_gravity_body_torque + f_gravity_foot_torque
-            acceleration_perpendicular_to_leg_frame = f_gravity_torque / leg_length
+
+            # Calculate moment of inertia
+            moment_of_inertia = self.m_f * \
+                (self.hopper_leg_length / 2.0) ** 2.0 + \
+                self.m_b * (leg_length) ** 2.0
+
+            # Calculate rotational acceleration
+            rotational_acceleration = f_gravity_torque / moment_of_inertia
+
+            # Transform to linear acceleration
+            acceleration_perpendicular_to_leg_frame = rotational_acceleration * leg_length
 
             #  Calculate new acceleration in x & z frames (with all forces)
             #  x_acceleration_along_leg_frame should be good since z_acceleration_along_leg_frame is good
@@ -293,6 +303,7 @@ class Hopper2dController(VectorSystem):
                 z_acceleration_perpendicular_to_leg_frame
 
             # Set new speeds
+            # x_acceleration should slow down when it lands and then re-accelerate
             current_state[0+5] = current_state[0+5] + x_acceleration * timestep
             current_state[1+5] = current_state[1+5] + z_acceleration * timestep
 
@@ -301,10 +312,11 @@ class Hopper2dController(VectorSystem):
             current_state[1] = current_state[1] + current_state[1+5] * timestep
 
             # TODO: Fix this to send in the position of the center of the body
-            body_position = np.copy(current_state[0:2])
+            body_position = self.get_body_position_from(current_state)
             leg_length = self.get_leg_length(foot_position, body_position)
 
-            current_state[4] = leg_length - self.hopper_leg_length / 2.0
+            current_state[4] = leg_length - self.hopper_leg_length / \
+                2.0 - self.body_size_height / 2.0
 
             # Get beta based on
             beta = self.get_beta_from(foot_position, body_position)
@@ -313,6 +325,7 @@ class Hopper2dController(VectorSystem):
 
             if current_state[4] >= 0.5:
                 print('\nIn the air now!')
+                print(current_time)
                 print(beta)
                 found_liftoff_minus_state = True
 
