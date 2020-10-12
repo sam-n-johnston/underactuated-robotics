@@ -35,7 +35,7 @@ class TestTakeOffPlus(unittest.TestCase):
 
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=state_1,
-                                                                    duration=2,
+                                                                    duration=0.0,
                                                                     desired_lateral_velocity=0.0)
 
         # Find calculated energy at apex
@@ -223,31 +223,39 @@ class TestTakeOffPlus(unittest.TestCase):
     def test_foot_position(self):
         state = np.zeros(10)
         state[1] = 1.5  # height
-        expected_foot_height = 0.5
+        expected_foot = np.array([0.0, 0.5])
 
-        hopper, controller, state_log, animation = Simulate2dHopper(x0=state,
-                                                                    duration=2,
-                                                                    desired_lateral_velocity=0.0)
-
-        simulated_foot_position = controller.get_foot_position_from(
-            state)
-        self.assertAlmostEqual(
-            simulated_foot_position[1], expected_foot_height, 1)
+        self.foot_position(state, expected_foot)
 
     def test_foot_position_extended(self):
         state = np.zeros(10)
         state[1] = 1.5  # height
         state[4] = 0.5  # l distance
-        expected_foot_height = 0.0
+        expected_foot = np.array([0.0, 0.0])
 
+        self.foot_position(state, expected_foot)
+
+    def test_foot_position_theta(self):
+        state = np.zeros(10)
+        state[1] = 1.5      # height
+        state[2] = 1.57     # theta
+        state[4] = 0.5      # l distance
+        expected_foot = np.array([-1.5, state[1]])
+
+        self.foot_position(state, expected_foot)
+
+    def foot_position(self, state, expected_foot_position):
         hopper, controller, state_log, animation = Simulate2dHopper(x0=state,
-                                                                    duration=2,
+                                                                    duration=0.0,
                                                                     desired_lateral_velocity=0.0)
 
         simulated_foot_position = controller.get_foot_position_from(
             state)
+
         self.assertAlmostEqual(
-            simulated_foot_position[1], expected_foot_height, 1)
+            simulated_foot_position[0], expected_foot_position[0], 1)
+        self.assertAlmostEqual(
+            simulated_foot_position[1], expected_foot_position[1], 1)
 
     def test_get_betas(self):
         state = np.zeros(10)
@@ -298,26 +306,6 @@ class TestTakeOffPlus(unittest.TestCase):
 
         self.assertAlmostEqual(beta1, beta2, 3)
         self.assertAlmostEqual(beta1, expected_beta, 3)
-
-    def test_foot_position_theta(self):
-        state = np.zeros(10)
-        state[1] = 1.5      # height
-        state[2] = 1.57     # theta
-        state[4] = 0.5      # l distance
-        expected_foot_x = -1.5
-        expected_foot_z = state[1]
-
-        hopper, controller, state_log, animation = Simulate2dHopper(x0=state,
-                                                                    duration=1,
-                                                                    desired_lateral_velocity=0.0)
-
-        simulated_foot_position = controller.get_foot_position_from(
-            state)
-
-        self.assertAlmostEqual(
-            simulated_foot_position[0], expected_foot_x, 1)
-        self.assertAlmostEqual(
-            simulated_foot_position[1], expected_foot_z, 1)
 
     def test_liftoff_minus_state(self):
         apex_state = np.zeros(10)
