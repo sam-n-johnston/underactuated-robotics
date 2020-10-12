@@ -50,8 +50,8 @@ class Hopper2dController(VectorSystem):
         self.print_period = print_period
         self.last_print_time = -print_period
         # Remember what the index of the foot is
-        # self.foot_body_index = hopper.GetFrameByName("foot").get_body_index()
-        self.foot_body_frame = hopper.GetFrameByName("foot")
+        self.foot_frame = hopper.GetFrameByName("foot")
+        self.body_frame = hopper.GetFrameByName("body")
         self.world_frame = hopper.world_frame()
 
         # The context for the hopper
@@ -197,7 +197,7 @@ class Hopper2dController(VectorSystem):
         foot_point = np.array([0.0, 0.0, -self.hopper_leg_length / 2.0])
         foot_point_in_world = self.hopper.CalcPointsPositions(
             context,
-            self.foot_body_frame,
+            self.foot_frame,
             foot_point,
             self.world_frame
         )
@@ -208,10 +208,10 @@ class Hopper2dController(VectorSystem):
         context.get_mutable_discrete_state_vector().SetFromVector(state)
         # Run out the forward kinematics of the robot
         # to figure out where the body is in world frame.
-        body_point = np.array([0.0, 0.0, 0.0])
+        body_point = np.array([0.0, 0.0, self.body_size_height / 2.0])
         body_point_in_world = self.hopper.CalcPointsPositions(
             context,
-            self.foot_body_frame,
+            self.body_frame,
             body_point,
             self.world_frame
         )
@@ -253,16 +253,20 @@ class Hopper2dController(VectorSystem):
             acceleration_along_leg_frame = leg_force / self.m_b
 
             # Calculate rotational acceleration
-            # TODO: Fix this to send in the position of the center of the body
-            body_position = np.copy(current_state[0:2])
-            leg_length = self.get_leg_length(
-                foot_position, body_position)
+            body_position = self.get_body_position_from(
+                current_state)
+            # body_position = np.array([current_state[0], current_state[1]])
+            # Maybe the leg length is not correct <= TODO: Let's test this, I think it's the culprit.
+            leg_length = self.get_leg_length(foot_position, body_position)
 
+            # f_gravity_body is good, and f_gravity_body_perpendicular_to_leg_frame is good
             f_gravity_body_perpendicular_to_leg_frame = f_gravity_body * \
                 math.sin(beta)
+            # f_gravity_foot_perpendicular_to_leg_frame is good
             f_gravity_foot_perpendicular_to_leg_frame = f_gravity_foot * \
                 math.sin(beta)
 
+            # Maybe the center of mass of the leg isn't in the middle? I doubt it
             f_gravity_foot_torque = f_gravity_foot_perpendicular_to_leg_frame * \
                 self.hopper_leg_length / 2.0
             f_gravity_body_torque = f_gravity_body_perpendicular_to_leg_frame * leg_length
@@ -271,15 +275,18 @@ class Hopper2dController(VectorSystem):
             acceleration_perpendicular_to_leg_frame = f_gravity_torque / leg_length
 
             #  Calculate new acceleration in x & z frames (with all forces)
+            #  x_acceleration_along_leg_frame should be good since z_acceleration_along_leg_frame is good
             x_acceleration_along_leg_frame = acceleration_along_leg_frame * \
                 math.sin(beta)
             z_acceleration_along_leg_frame = acceleration_along_leg_frame * \
                 math.cos(beta)
+            # This calculation seems fine, so acceleration_perpendicular_to_leg_frame might be the problem
             x_acceleration_perpendicular_to_leg_frame = acceleration_perpendicular_to_leg_frame * \
                 math.cos(beta)
             z_acceleration_perpendicular_to_leg_frame = acceleration_perpendicular_to_leg_frame * \
                 math.sin(beta)
 
+            # TODO: Something in x_acceleration isn't correct...
             x_acceleration = x_acceleration_along_leg_frame + \
                 x_acceleration_perpendicular_to_leg_frame
             z_acceleration = z_acceleration_along_leg_frame + \
@@ -381,6 +388,7 @@ class Hopper2dController(VectorSystem):
         foot_point_in_world = self.get_foot_position_from(state)
         # print('foot_point_in_world')
         # print(foot_point_in_world)
+        # and state[4] < self.l_max
         in_contact = foot_point_in_world[1] <= 0.01
 
         return in_contact
@@ -475,7 +483,7 @@ class Hopper2dController(VectorSystem):
         # to figure out where the foot is in world frame.
         foot_point = np.array([0.0, 0.0, -self.hopper_leg_length])
         foot_point_in_world = self.hopper.CalcPointsPositions(self.plant_context,
-                                                              self.foot_body_frame, foot_point, self.world_frame)
+                                                              self.foot_frame, foot_point, self.world_frame)
         in_contact = foot_point_in_world[2] <= 0.01
         in_air = foot_point_in_world[2] >= 0.1
 
@@ -502,7 +510,7 @@ class Hopper2dController(VectorSystem):
         # to figure out where the foot is in world frame.
         foot_point = np.array([0.0, 0.0, -self.hopper_leg_length])
         foot_point_in_world = self.hopper.CalcPointsPositions(self.plant_context,
-                                                              self.foot_body_frame, foot_point, self.world_frame)
+                                                              self.foot_frame, foot_point, self.world_frame)
         in_contact = foot_point_in_world[2] <= 0.01
 
         # Feel free to play with these values!

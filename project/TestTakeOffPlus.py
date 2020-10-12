@@ -301,11 +301,29 @@ class TestTakeOffPlus(unittest.TestCase):
         beta1 = controller.get_beta(theta=state[2], alpha=state[3])
 
         foot_position = controller.get_foot_position_from(state)
-        body_position = controller.get_body_position_from(state)
+        body_position = np.array([state[0], state[1]])
         beta2 = controller.get_beta_from(foot_position, body_position)
 
-        self.assertAlmostEqual(beta1, beta2, 3)
-        self.assertAlmostEqual(beta1, expected_beta, 3)
+        self.assertAlmostEqual(beta1, beta2, 1)
+        self.assertAlmostEqual(beta1, expected_beta, 2)
+
+    def test_get_body_center_of_mass_position(self):
+        state = np.zeros(10)
+        state[1] = 3.0  # height
+        state[4] = 0.5  # l distance
+        expected_position = np.array([0.0, 3.25])
+
+        self.get_body_center_of_mass_position(state, expected_position)
+
+    def get_body_center_of_mass_position(self, state, expected_position):
+        hopper, controller, state_log, animation = Simulate2dHopper(x0=state,
+                                                                    duration=0.0,
+                                                                    desired_lateral_velocity=0.0)
+
+        body_position = controller.get_body_position_from(state)
+
+        self.assertAlmostEqual(body_position[0], expected_position[0], 2)
+        self.assertAlmostEqual(body_position[1], expected_position[1], 1)
 
     def test_liftoff_minus_state(self):
         apex_state = np.zeros(10)
@@ -362,7 +380,7 @@ class TestTakeOffPlus(unittest.TestCase):
         apex_state = np.zeros(10)
         apex_state[1] = 3.5  # height
         apex_state[4] = 0.5  # l distance
-        apex_state[0+5] = 1.5  # xd
+        apex_state[0+5] = 0.25  # xd
 
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
@@ -370,6 +388,7 @@ class TestTakeOffPlus(unittest.TestCase):
                                                                     desired_lateral_velocity=0.0)
 
         # Get simulated liftoff minus state
+        print('STRAING================================================')
         simulated_state_index_at_liftoff_minus = self.find_simulated_state_index_at_liftoff_minus(
             state_log, controller)
         simulated_state_at_liftoff_minus = state_log.data(
@@ -380,6 +399,9 @@ class TestTakeOffPlus(unittest.TestCase):
             apex_state)
 
         print('simulated_state_at_liftoff_minus')
+        print(simulated_state_index_at_liftoff_minus)
+        print(self.find_simulated_state_index_at_touchdown_plus(
+            state_log, controller))
         print(simulated_state_at_liftoff_minus)
         print('calculated_state_at_liftoff_minus')
         print(calculated_state_at_liftoff_minus)
@@ -505,6 +527,10 @@ class TestTakeOffPlus(unittest.TestCase):
 
         while liftoff_minus_index == -1 and index < number_of_states:
             index = index + 1
+            # foot_height = controller.get_foot_position_from(
+            #     state_log.data()[:, index])[1]
+            # print('IS FOOT IN CONTACT:\t' +
+            #       str(index) + '\t\t' + str(foot_height) + '\t\t leg extension: ' + str(state_log.data()[4, index]))
             if not controller.is_foot_in_contact(state_log.data()[:, index]):
                 liftoff_minus_index = index - 1
 
