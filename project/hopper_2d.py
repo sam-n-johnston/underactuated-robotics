@@ -105,7 +105,7 @@ class Hopper2dController(VectorSystem):
     def potential_energy_foot(self, state):
         # Assuming foot's mass in a point mass in the middle
         # TODO: take into  account for alpha and theta
-        # (use the get_foot_position_based_state or similar)
+        # (use the get_foot_position_from or similar)
         is_foot_in_air = state[1] + \
             self.body_size_height > self.hopper_leg_length
         if is_foot_in_air:
@@ -141,10 +141,10 @@ class Hopper2dController(VectorSystem):
 
         # Potential energy
         # TODO: take into  account for alpha and theta
-        # (use the get_foot_position_based_state or similar)
+        # (use the get_foot_position_from or similar)
         body_z_touchdown_minus = self.hopper_leg_length - self.body_size_height
         # TODO: take into  account for alpha and theta
-        # (use the get_foot_position_based_state or similar)
+        # (use the get_foot_position_from or similar)
         foot_z_touchdown_minus = self.hopper_leg_length / 2.0
 
         potential_energy_foot = self.calculate_potential_energy(
@@ -178,13 +178,18 @@ class Hopper2dController(VectorSystem):
     def get_touchdown_plus_state_based_on_flight_state(self, flight_phase):
         return self.get_touchdown_minus_state_based_on_flight_state(flight_phase)
 
+    def get_beta_from(self, foot_position, body_position):
+        x_diff = body_position[0] - foot_position[0]
+        z_diff = body_position[1] - foot_position[1]
+        return math.atan2(x_diff, z_diff)
+
     def get_beta(self, theta, alpha):
         return theta + alpha
 
     def get_beta_from_touchdown_state(self, touchdown_state):
         return self.get_beta(theta=touchdown_state[2], alpha=touchdown_state[3])
 
-    def get_foot_position_based_state(self, state):
+    def get_foot_position_from(self, state):
         context = self.hopper.CreateDefaultContext()
         context.get_mutable_discrete_state_vector().SetFromVector(state)
         # Run out the forward kinematics of the robot
@@ -229,17 +234,17 @@ class Hopper2dController(VectorSystem):
         timestep = 0.0005
         current_time = 0.0
         current_state = np.copy(touchdown_minus_state)
-        foot_position = self.get_foot_position_based_state(
+        foot_position = self.get_foot_position_from(
             touchdown_minus_state)
         found_liftoff_minus_state = False
         f_gravity_body = self.m_b * self.gravity
         f_gravity_foot = self.m_f * self.gravity
+        beta = self.get_beta(
+            theta=current_state[2], alpha=current_state[3])
 
         while not found_liftoff_minus_state and current_time < 2.0:
             l_rest = 1.0
             spring_force = self.spring_force(l_rest - current_state[4])
-            beta = self.get_beta(
-                theta=current_state[2], alpha=current_state[3])
 
             # Spring is pushing back only the body, not the foot's mass
             f_gravity_along_leg_frame = f_gravity_body * math.cos(beta)
@@ -290,15 +295,18 @@ class Hopper2dController(VectorSystem):
 
             # TODO: Fix this to send in the position of the center of the body
             body_position = np.copy(current_state[0:2])
-            leg_length = self.get_leg_length(
-                foot_position, body_position)
+            leg_length = self.get_leg_length(foot_position, body_position)
 
             current_state[4] = leg_length - self.hopper_leg_length / 2.0
+
+            # Get beta based on
+            beta = self.get_beta_from(foot_position, body_position)
 
             current_time = current_time + timestep
 
             if current_state[4] >= 0.5:
                 print('\nIn the air now!')
+                print(beta)
                 found_liftoff_minus_state = True
 
         if not found_liftoff_minus_state:
@@ -370,7 +378,7 @@ class Hopper2dController(VectorSystem):
         return lift_off_plus_state[0+5]
 
     def is_foot_in_contact(self, state):
-        foot_point_in_world = self.get_foot_position_based_state(state)
+        foot_point_in_world = self.get_foot_position_from(state)
         # print('foot_point_in_world')
         # print(foot_point_in_world)
         in_contact = foot_point_in_world[1] <= 0.01

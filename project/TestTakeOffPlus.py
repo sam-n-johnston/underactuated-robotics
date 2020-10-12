@@ -229,7 +229,7 @@ class TestTakeOffPlus(unittest.TestCase):
                                                                     duration=2,
                                                                     desired_lateral_velocity=0.0)
 
-        simulated_foot_position = controller.get_foot_position_based_state(
+        simulated_foot_position = controller.get_foot_position_from(
             state)
         self.assertAlmostEqual(
             simulated_foot_position[1], expected_foot_height, 1)
@@ -244,10 +244,60 @@ class TestTakeOffPlus(unittest.TestCase):
                                                                     duration=2,
                                                                     desired_lateral_velocity=0.0)
 
-        simulated_foot_position = controller.get_foot_position_based_state(
+        simulated_foot_position = controller.get_foot_position_from(
             state)
         self.assertAlmostEqual(
             simulated_foot_position[1], expected_foot_height, 1)
+
+    def test_get_betas(self):
+        state = np.zeros(10)
+        state[1] = 3.0  # height
+        state[4] = 0.5  # l distance
+        expected_beta = 0.0
+
+        self.get_betas(state, expected_beta)
+
+    def test_get_betas_with_theta(self):
+        state = np.zeros(10)
+        state[1] = 3.0  # height
+        state[2] = 0.8  # theta
+        state[4] = 0.5  # l distance
+        expected_beta = state[2]
+
+        self.get_betas(state, expected_beta)
+
+    def test_get_betas_with_alpha(self):
+        state = np.zeros(10)
+        state[1] = 3.0  # height
+        state[3] = 0.8  # alpha
+        state[4] = 0.5  # l distance
+        expected_beta = state[3]
+
+        self.get_betas(state, expected_beta)
+
+    def test_get_betas_with_theta_and_alpha(self):
+        state = np.zeros(10)
+        state[1] = 3.0  # height
+        state[2] = 0.5  # theta
+        state[3] = 0.4  # alpha
+        state[4] = 0.5  # l distance
+        expected_beta = 0.9
+
+        self.get_betas(state, expected_beta)
+
+    def get_betas(self, state, expected_beta):
+        hopper, controller, state_log, animation = Simulate2dHopper(x0=state,
+                                                                    duration=0.0,
+                                                                    desired_lateral_velocity=0.0)
+
+        beta1 = controller.get_beta(theta=state[2], alpha=state[3])
+
+        foot_position = controller.get_foot_position_from(state)
+        body_position = controller.get_body_position_from(state)
+        beta2 = controller.get_beta_from(foot_position, body_position)
+
+        self.assertAlmostEqual(beta1, beta2, 3)
+        self.assertAlmostEqual(beta1, expected_beta, 3)
 
     def test_foot_position_theta(self):
         state = np.zeros(10)
@@ -261,7 +311,7 @@ class TestTakeOffPlus(unittest.TestCase):
                                                                     duration=1,
                                                                     desired_lateral_velocity=0.0)
 
-        simulated_foot_position = controller.get_foot_position_based_state(
+        simulated_foot_position = controller.get_foot_position_from(
             state)
 
         self.assertAlmostEqual(
