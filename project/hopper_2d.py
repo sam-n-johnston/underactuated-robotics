@@ -181,7 +181,7 @@ class Hopper2dController(VectorSystem):
     def get_beta_from(self, foot_position, body_position):
         x_diff = body_position[0] - foot_position[0]
         z_diff = body_position[1] - foot_position[1]
-        return math.atan2(x_diff, z_diff)
+        return math.pi / 2.0 - math.atan2(z_diff, x_diff)
 
     def get_beta(self, theta, alpha):
         return theta + alpha
@@ -258,6 +258,9 @@ class Hopper2dController(VectorSystem):
                 current_state)
             # Maybe the leg length is not correct <= TODO: Let's test this, I think it's the culprit.
             leg_length = self.get_leg_length(foot_position, body_position)
+            # print('start body position')
+            # print(body_position)
+            # print(current_state[1+5])
 
             # f_gravity_body is good, and f_gravity_body_perpendicular_to_leg_frame is good
             f_gravity_body_perpendicular_to_leg_frame = f_gravity_body * \
@@ -281,31 +284,52 @@ class Hopper2dController(VectorSystem):
             # Calculate rotational acceleration
             rotational_acceleration = f_gravity_torque / moment_of_inertia
 
+            # TODO: Calculate everything in the frame of reference of rotation (angular acceleration/velocity)
+            # Make sure it doesn't exceed the cone of friction of the foot
+
             # Transform to linear acceleration
             acceleration_perpendicular_to_leg_frame = rotational_acceleration * leg_length
 
-            #  Calculate new acceleration in x & z frames (with all forces)
-            #  x_acceleration_along_leg_frame should be good since z_acceleration_along_leg_frame is good
-            x_acceleration_along_leg_frame = acceleration_along_leg_frame * \
-                math.sin(beta)
-            z_acceleration_along_leg_frame = acceleration_along_leg_frame * \
-                math.cos(beta)
-            # This calculation seems fine, so acceleration_perpendicular_to_leg_frame might be the problem
-            x_acceleration_perpendicular_to_leg_frame = acceleration_perpendicular_to_leg_frame * \
-                math.cos(beta)
-            z_acceleration_perpendicular_to_leg_frame = acceleration_perpendicular_to_leg_frame * \
-                math.sin(beta)
+            # Get current speeds along_leg_frame and perpendicular_to_leg_frame
+            current_velocity_along_leg_frame = current_state[0+5] * math.sin(
+                beta) + current_state[1+5] * math.cos(beta)
+            # Somehow, current_velocity_perpendicular_to_leg_frame shift from + to - a lot at the begining
+            current_velocity_perpendicular_to_leg_frame = current_state[0+5] * math.cos(
+                beta) + current_state[1+5] * math.sin(beta)
 
-            # TODO: Something in x_acceleration isn't correct...
-            x_acceleration = x_acceleration_along_leg_frame + \
-                x_acceleration_perpendicular_to_leg_frame
-            z_acceleration = z_acceleration_along_leg_frame + \
-                z_acceleration_perpendicular_to_leg_frame
+            # Update those velocities based on the rotational acceleration
+            new_velocity_along_leg_frame = current_velocity_along_leg_frame + \
+                acceleration_along_leg_frame * timestep
+            new_velocity_perpendicular_to_leg_frame = current_velocity_perpendicular_to_leg_frame + \
+                acceleration_perpendicular_to_leg_frame * timestep
 
+            digits = 4
+            print('vel leg frame:\t' +
+                  '(ACC) {:.{}f}'.format(
+                      acceleration_along_leg_frame, digits) +
+                  '\t\t(VEL) {:.{}f}'.format(
+                      current_velocity_along_leg_frame, digits) +
+                  '\t\t{:.{}f}'.format(
+                      current_velocity_perpendicular_to_leg_frame, digits) +
+                  '\t\t{:.{}f}'.format(current_state[4], digits) +
+                  '\t\t(BETA) {:.{}f}'.format(beta, digits) +
+                  '\t\t{:.{}f}'.format(
+                      current_state[0+5] * math.sin(beta), digits) +
+                  '\t\t{:.{}f}'.format(
+                      current_state[1+5] * math.cos(beta), digits) +
+                  '\t\t(BODY POS){:.{}f}'.format(body_position[0], digits) +
+                  '\t\t{:.{}f}'.format(body_position[1], digits)
+                  )
+
+            # Convert back to euclidean coordinates
             # Set new speeds
             # x_acceleration should slow down when it lands and then re-accelerate
-            current_state[0+5] = current_state[0+5] + x_acceleration * timestep
-            current_state[1+5] = current_state[1+5] + z_acceleration * timestep
+            current_state[0+5] = new_velocity_along_leg_frame * \
+                math.sin(beta) + \
+                new_velocity_perpendicular_to_leg_frame * math.cos(beta)
+            current_state[1+5] = new_velocity_along_leg_frame * \
+                math.cos(beta) + \
+                new_velocity_perpendicular_to_leg_frame * math.sin(beta)
 
             # Set new positions
             current_state[0] = current_state[0] + current_state[0+5] * timestep
@@ -315,6 +339,12 @@ class Hopper2dController(VectorSystem):
             body_position = self.get_body_position_from(current_state)
             leg_length = self.get_leg_length(foot_position, body_position)
 
+            # print('end body position')
+            # print(body_position)
+            # print(current_state[1+5])
+
+            # print('current_state[4]')
+            # print(current_state[4])
             current_state[4] = leg_length - self.hopper_leg_length / \
                 2.0 - self.body_size_height / 2.0
 
@@ -327,6 +357,7 @@ class Hopper2dController(VectorSystem):
                 print('\nIn the air now!')
                 print(current_time)
                 print(beta)
+                print(current_state[4])
                 found_liftoff_minus_state = True
 
         if not found_liftoff_minus_state:
