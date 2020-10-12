@@ -288,6 +288,8 @@ class Hopper2dController(VectorSystem):
             # Make sure it doesn't exceed the cone of friction of the foot
 
             # Transform to linear acceleration
+            # Somehow, this goes from + to - during the first few seconds of landing...
+            # This is linked to why the speed is moving like that and why beta is moving like that as well..
             acceleration_perpendicular_to_leg_frame = rotational_acceleration * leg_length
 
             # Get current speeds along_leg_frame and perpendicular_to_leg_frame
@@ -306,7 +308,7 @@ class Hopper2dController(VectorSystem):
             digits = 4
             print('vel leg frame:\t' +
                   '(ACC) {:.{}f}'.format(
-                      acceleration_along_leg_frame, digits) +
+                      acceleration_perpendicular_to_leg_frame, digits) +
                   '\t\t(VEL) {:.{}f}'.format(
                       current_velocity_along_leg_frame, digits) +
                   '\t\t{:.{}f}'.format(
