@@ -246,8 +246,8 @@ class Hopper2dController(VectorSystem):
         found_liftoff_minus_state = False
         f_gravity_body = self.m_b * self.gravity
         f_gravity_foot = self.m_f * self.gravity
-        beta = self.get_beta(
-            theta=current_state[2], alpha=current_state[3])
+        body_position = self.get_body_position_from(current_state)
+        beta = self.get_beta_from(foot_position, body_position)
         previous_velocity_along_leg_frame = current_state[0+5] * math.sin(
             beta) + current_state[1+5] * math.cos(beta)
         previous_velocity_perpendicular_to_leg_frame = current_state[0+5] * math.cos(
@@ -289,8 +289,8 @@ class Hopper2dController(VectorSystem):
             # This is linked to why the speed is moving like that and why beta is moving like that as well..
             # Acceleration is the problem, it's causing beta to go back down...
             # rotational_acceleration * leg_length
-            # acceleration_perpendicular_to_leg_frame = 0.0
-            acceleration_perpendicular_to_leg_frame = rotational_acceleration * leg_length
+            acceleration_perpendicular_to_leg_frame = 0.0
+            # acceleration_perpendicular_to_leg_frame = rotational_acceleration * leg_length
 
             # Update those velocities based on the rotational acceleration
             new_velocity_along_leg_frame = previous_velocity_along_leg_frame + \
@@ -311,17 +311,8 @@ class Hopper2dController(VectorSystem):
                       previous_velocity_perpendicular_to_leg_frame, digits) +
                   '\t{:.{}f}'.format(current_state[4], digits) +
                   '\t(BETA) {:.{}f}'.format(beta, digits) +
-                  '\t{:.{}f}'.format(
-                      current_state[0+5] * math.sin(beta), digits) +
-                  '\t{:.{}f}'.format(
-                      current_state[1+5] * math.cos(beta), digits) +
                   '\t(BODY POS) {:.{}f}'.format(body_position[0], digits) +
-                  '\t{:.{}f}'.format(body_position[1], digits) +
-                  '\t(VEL change) {:.{}f}'.format(new_velocity_along_leg_frame * math.sin(beta), digits) +
-                  '\t{:.{}f}'.format(new_velocity_perpendicular_to_leg_frame * math.cos(beta), digits) +
-                  '\t{:.{}f}'.format(new_velocity_along_leg_frame * math.cos(beta), digits) +
-                  '\t{:.{}f}'.format(
-                      new_velocity_perpendicular_to_leg_frame * math.sin(beta), digits)
+                  '\t{:.{}f}'.format(body_position[1], digits)
                   )
 
             previous_velocity_along_leg_frame = new_velocity_along_leg_frame
