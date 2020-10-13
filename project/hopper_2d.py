@@ -248,6 +248,8 @@ class Hopper2dController(VectorSystem):
         f_gravity_foot = self.m_f * self.gravity
         body_position = self.get_body_position_from(current_state)
         beta = self.get_beta_from(foot_position, body_position)
+        # previous_velocity_along_leg_frame = 0.0
+        # previous_velocity_perpendicular_to_leg_frame = 0.0
         previous_velocity_along_leg_frame = current_state[0+5] * math.sin(
             beta) + current_state[1+5] * math.cos(beta)
         previous_velocity_perpendicular_to_leg_frame = current_state[0+5] * math.cos(
@@ -289,8 +291,8 @@ class Hopper2dController(VectorSystem):
             # This is linked to why the speed is moving like that and why beta is moving like that as well..
             # Acceleration is the problem, it's causing beta to go back down...
             # rotational_acceleration * leg_length
-            acceleration_perpendicular_to_leg_frame = 0.0
-            # acceleration_perpendicular_to_leg_frame = rotational_acceleration * leg_length
+            # acceleration_perpendicular_to_leg_frame = 0.0
+            acceleration_perpendicular_to_leg_frame = rotational_acceleration * leg_length
 
             # Update those velocities based on the rotational acceleration
             new_velocity_along_leg_frame = previous_velocity_along_leg_frame + \
@@ -298,22 +300,22 @@ class Hopper2dController(VectorSystem):
             new_velocity_perpendicular_to_leg_frame = previous_velocity_perpendicular_to_leg_frame - \
                 acceleration_perpendicular_to_leg_frame * timestep
 
-            digits = 4
-            print('vel leg frame:\t' +
-                  '(ACC) {:.{}f}'.format(
-                      acceleration_along_leg_frame, digits) +
-                  '\t{:.{}f}'.format(
-                      acceleration_perpendicular_to_leg_frame, digits) +
-                  '\t(grav) {:.{}f}'.format(f_gravity_torque, digits) +
-                  '\t(VEL) {:.{}f}'.format(
-                      previous_velocity_along_leg_frame, digits) +
-                  '\t{:.{}f}'.format(
-                      previous_velocity_perpendicular_to_leg_frame, digits) +
-                  '\t{:.{}f}'.format(current_state[4], digits) +
-                  '\t(BETA) {:.{}f}'.format(beta, digits) +
-                  '\t(BODY POS) {:.{}f}'.format(body_position[0], digits) +
-                  '\t{:.{}f}'.format(body_position[1], digits)
-                  )
+            # digits = 4
+            # print('vel leg frame:\t' +
+            #       '(ACC) {:.{}f}'.format(
+            #           acceleration_along_leg_frame, digits) +
+            #       '\t{:.{}f}'.format(
+            #           acceleration_perpendicular_to_leg_frame, digits) +
+            #       '\t(grav) {:.{}f}'.format(f_gravity_torque, digits) +
+            #       '\t(VEL) {:.{}f}'.format(
+            #           previous_velocity_along_leg_frame, digits) +
+            #       '\t{:.{}f}'.format(
+            #           previous_velocity_perpendicular_to_leg_frame, digits) +
+            #       '\t{:.{}f}'.format(current_state[4], digits) +
+            #       '\t(BETA) {:.{}f}'.format(beta, digits) +
+            #       '\t(BODY POS) {:.{}f}'.format(body_position[0], digits) +
+            #       '\t{:.{}f}'.format(body_position[1], digits)
+            #       )
 
             previous_velocity_along_leg_frame = new_velocity_along_leg_frame
             previous_velocity_perpendicular_to_leg_frame = new_velocity_perpendicular_to_leg_frame
@@ -341,7 +343,7 @@ class Hopper2dController(VectorSystem):
 
             current_time = current_time + timestep
 
-            if current_state[4] >= 0.5:
+            if current_state[4] > 0.501:
                 print('\nIn the air now!')
                 print(current_time)
                 print(beta)
@@ -418,12 +420,9 @@ class Hopper2dController(VectorSystem):
 
     def is_foot_in_contact(self, state):
         foot_point_in_world = self.get_leg_tip_position_from(state)
-        # print('foot_point_in_world')
-        # print(foot_point_in_world)
-        # and state[4] < self.l_max
-        in_contact = foot_point_in_world[1] <= 0.01
+        is_not_in_contact = foot_point_in_world[1] > 0.01 and state[4] >= 0.5
 
-        return in_contact
+        return not is_not_in_contact
 
     def calculate_apex_z_based_off_liftoff_plus(self, lift_off_plus_state):
         lift_off_zd = lift_off_plus_state[1+5]

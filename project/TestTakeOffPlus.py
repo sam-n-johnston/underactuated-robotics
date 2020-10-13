@@ -546,8 +546,8 @@ class TestTakeOffPlus(unittest.TestCase):
             index = index + 1
             # foot_height = controller.get_leg_tip_position_from(
             #     state_log.data()[:, index])[1]
-            # print('IS FOOT IN CONTACT:\t' +
-            #       str(index) + '\t\t' + str(foot_height) + '\t\t leg extension: ' + str(state_log.data()[4, index]))
+            # print('CONTACT:\t' + str(not controller.is_foot_in_contact(state_log.data()[:, index])) +
+            #       '\t\t' + str(index) + '\t\t' + str(foot_height) + '\t\t leg extension: ' + str(state_log.data()[4, index]))
             if not controller.is_foot_in_contact(state_log.data()[:, index]):
                 liftoff_minus_index = index - 1
 
