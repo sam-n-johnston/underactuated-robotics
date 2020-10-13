@@ -239,6 +239,8 @@ class Hopper2dController(VectorSystem):
         timestep = 0.0005
         current_time = 0.0
         current_state = np.copy(touchdown_minus_state)
+        print('starting..')
+        print(current_state)
         foot_position = self.get_leg_tip_position_from(
             touchdown_minus_state)
         found_liftoff_minus_state = False
@@ -293,7 +295,7 @@ class Hopper2dController(VectorSystem):
             # Update those velocities based on the rotational acceleration
             new_velocity_along_leg_frame = previous_velocity_along_leg_frame + \
                 acceleration_along_leg_frame * timestep
-            new_velocity_perpendicular_to_leg_frame = previous_velocity_perpendicular_to_leg_frame + \
+            new_velocity_perpendicular_to_leg_frame = previous_velocity_perpendicular_to_leg_frame - \
                 acceleration_perpendicular_to_leg_frame * timestep
 
             digits = 4
@@ -305,8 +307,6 @@ class Hopper2dController(VectorSystem):
                   '\t(grav) {:.{}f}'.format(f_gravity_torque, digits) +
                   '\t(VEL) {:.{}f}'.format(
                       previous_velocity_along_leg_frame, digits) +
-                  '\t=> {:.{}f}'.format(
-                      new_velocity_along_leg_frame, digits) +
                   '\t{:.{}f}'.format(
                       previous_velocity_perpendicular_to_leg_frame, digits) +
                   '\t{:.{}f}'.format(current_state[4], digits) +
@@ -329,7 +329,7 @@ class Hopper2dController(VectorSystem):
 
             # Convert back to euclidean coordinates
             current_state[0+5] = new_velocity_along_leg_frame * \
-                math.sin(beta) + \
+                math.sin(beta) - \
                 new_velocity_perpendicular_to_leg_frame * math.cos(beta)
             current_state[1+5] = new_velocity_along_leg_frame * \
                 math.cos(beta) + \
