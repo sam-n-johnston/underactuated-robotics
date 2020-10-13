@@ -362,11 +362,6 @@ class TestTakeOffPlus(unittest.TestCase):
         calculated_state_at_liftoff_minus = controller.get_liftoff_minus_state_based_on_flight_state(
             apex_state)
 
-        print('simulated_state_at_liftoff_minus')
-        print(simulated_state_at_liftoff_minus)
-        print('calculated_state_at_liftoff_minus')
-        print(calculated_state_at_liftoff_minus)
-
         self.assertAlmostEqual(
             simulated_state_at_liftoff_minus[0],
             calculated_state_at_liftoff_minus[0],
@@ -401,7 +396,7 @@ class TestTakeOffPlus(unittest.TestCase):
     def test_liftoff_minus_state_with_alpha(self):
         apex_state = np.zeros(10)
         apex_state[1] = 3.5  # height
-        apex_state[2] = 0.1  # alpha
+        apex_state[3] = 0.1  # alpha
         apex_state[4] = 0.5  # l distance
 
         # Use Simulate2dHopper to simulate
