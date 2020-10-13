@@ -161,6 +161,23 @@ class TestTakeOffPlus(unittest.TestCase):
 
         self.touchdown_minus_state_based_on_flight_state(apex_state)
 
+    def test_touchdown_minus_state_with_theta(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[2] = 0.1  # alpha
+        apex_state[4] = 0.5  # l distance
+
+        self.touchdown_minus_state_based_on_flight_state(apex_state)
+
+    def test_touchdown_minus_state_with_alpha(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[2] = 0.1  # theta
+        apex_state[3] = -0.2  # alpha
+        apex_state[4] = 0.5  # l distance
+
+        self.touchdown_minus_state_based_on_flight_state(apex_state)
+
     def touchdown_minus_state_based_on_flight_state(self, flight_state):
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=flight_state,
@@ -249,7 +266,7 @@ class TestTakeOffPlus(unittest.TestCase):
                                                                     duration=0.0,
                                                                     desired_lateral_velocity=0.0)
 
-        simulated_foot_position = controller.get_foot_position_from(
+        simulated_foot_position = controller.get_leg_tip_position_from(
             state)
 
         self.assertAlmostEqual(
@@ -300,7 +317,7 @@ class TestTakeOffPlus(unittest.TestCase):
 
         beta1 = controller.get_beta(theta=state[2], alpha=state[3])
 
-        foot_position = controller.get_foot_position_from(state)
+        foot_position = controller.get_leg_tip_position_from(state)
         body_position = np.array([state[0], state[1]])
         beta2 = controller.get_beta_from(foot_position, body_position)
 
@@ -381,11 +398,11 @@ class TestTakeOffPlus(unittest.TestCase):
             'Liftoff l'
         )
 
-    def test_liftoff_minus_state_with_horizontal_speed(self):
+    def test_liftoff_minus_state_with_alpha(self):
         apex_state = np.zeros(10)
         apex_state[1] = 3.5  # height
+        apex_state[2] = 0.1  # alpha
         apex_state[4] = 0.5  # l distance
-        apex_state[0+5] = 0.25  # xd
 
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
@@ -532,7 +549,7 @@ class TestTakeOffPlus(unittest.TestCase):
 
         while liftoff_minus_index == -1 and index < number_of_states:
             index = index + 1
-            # foot_height = controller.get_foot_position_from(
+            # foot_height = controller.get_leg_tip_position_from(
             #     state_log.data()[:, index])[1]
             # print('IS FOOT IN CONTACT:\t' +
             #       str(index) + '\t\t' + str(foot_height) + '\t\t leg extension: ' + str(state_log.data()[4, index]))

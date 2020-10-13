@@ -105,7 +105,7 @@ class Hopper2dController(VectorSystem):
     def potential_energy_foot(self, state):
         # Assuming foot's mass in a point mass in the middle
         # TODO: take into  account for alpha and theta
-        # (use the get_foot_position_from or similar)
+        # (use the get_leg_tip_position_from or similar)
         is_foot_in_air = state[1] + \
             self.body_size_height > self.hopper_leg_length
         if is_foot_in_air:
@@ -140,12 +140,14 @@ class Hopper2dController(VectorSystem):
             self.m_b + self.m_f, xd_flight)
 
         # Potential energy
-        # TODO: take into  account for alpha and theta
-        # (use the get_foot_position_from or similar)
-        body_z_touchdown_minus = self.hopper_leg_length - self.body_size_height
-        # TODO: take into  account for alpha and theta
-        # (use the get_foot_position_from or similar)
-        foot_z_touchdown_minus = self.hopper_leg_length / 2.0
+        foot_position = self.get_leg_tip_position_from(flight_phase)
+        body_position = self.get_body_position_from(flight_phase)
+        beta = self.get_beta_from(foot_position, body_position)
+        foot_z_touchdown_minus = self.hopper_leg_length / 2.0 * math.cos(beta)
+
+        body_z_touchdown_minus = math.cos(beta) * (
+            self.hopper_leg_length - self.body_size_height
+        )
 
         potential_energy_foot = self.calculate_potential_energy(
             self.m_f, foot_z_touchdown_minus)
@@ -169,6 +171,8 @@ class Hopper2dController(VectorSystem):
         touchdown_minus_state = np.zeros(10)
         touchdown_minus_state[0] = time_elapsed * xd_flight
         touchdown_minus_state[1] = body_z_touchdown_minus
+        touchdown_minus_state[2] = flight_phase[2]
+        touchdown_minus_state[3] = flight_phase[3]
         touchdown_minus_state[4] = leg_compression_amount_minus
         touchdown_minus_state[0+5] = xd_flight
         touchdown_minus_state[1+5] = zd_minus
@@ -189,7 +193,7 @@ class Hopper2dController(VectorSystem):
     def get_beta_from_touchdown_state(self, touchdown_state):
         return self.get_beta(theta=touchdown_state[2], alpha=touchdown_state[3])
 
-    def get_foot_position_from(self, state):
+    def get_leg_tip_position_from(self, state):
         context = self.hopper.CreateDefaultContext()
         context.get_mutable_discrete_state_vector().SetFromVector(state)
         # Run out the forward kinematics of the robot
@@ -235,7 +239,7 @@ class Hopper2dController(VectorSystem):
         timestep = 0.0005
         current_time = 0.0
         current_state = np.copy(touchdown_minus_state)
-        foot_position = self.get_foot_position_from(
+        foot_position = self.get_leg_tip_position_from(
             touchdown_minus_state)
         found_liftoff_minus_state = False
         f_gravity_body = self.m_b * self.gravity
@@ -282,6 +286,7 @@ class Hopper2dController(VectorSystem):
                 self.m_b * (leg_length) ** 2.0
 
             # Calculate rotational acceleration
+            # Even if I put this to 0, beta changes! :O So it's somewhere else!
             rotational_acceleration = f_gravity_torque / moment_of_inertia
 
             # TODO: Calculate everything in the frame of reference of rotation (angular acceleration/velocity)
@@ -290,6 +295,9 @@ class Hopper2dController(VectorSystem):
             # Transform to linear acceleration
             # Somehow, this goes from + to - during the first few seconds of landing...
             # This is linked to why the speed is moving like that and why beta is moving like that as well..
+            # Acceleration is the problem, it's causing beta to go back down...
+            # rotational_acceleration * leg_length
+            # acceleration_perpendicular_to_leg_frame = 0.0
             acceleration_perpendicular_to_leg_frame = rotational_acceleration * leg_length
 
             # Get current speeds along_leg_frame and perpendicular_to_leg_frame
@@ -302,26 +310,33 @@ class Hopper2dController(VectorSystem):
             # Update those velocities based on the rotational acceleration
             new_velocity_along_leg_frame = current_velocity_along_leg_frame + \
                 acceleration_along_leg_frame * timestep
+            # Stays the SAME! ===========================================================================
             new_velocity_perpendicular_to_leg_frame = current_velocity_perpendicular_to_leg_frame + \
                 acceleration_perpendicular_to_leg_frame * timestep
 
             digits = 4
-            print('vel leg frame:\t' +
-                  '(ACC) {:.{}f}'.format(
-                      acceleration_perpendicular_to_leg_frame, digits) +
-                  '\t\t(VEL) {:.{}f}'.format(
-                      current_velocity_along_leg_frame, digits) +
-                  '\t\t{:.{}f}'.format(
-                      current_velocity_perpendicular_to_leg_frame, digits) +
-                  '\t\t{:.{}f}'.format(current_state[4], digits) +
-                  '\t\t(BETA) {:.{}f}'.format(beta, digits) +
-                  '\t\t{:.{}f}'.format(
-                      current_state[0+5] * math.sin(beta), digits) +
-                  '\t\t{:.{}f}'.format(
-                      current_state[1+5] * math.cos(beta), digits) +
-                  '\t\t(BODY POS){:.{}f}'.format(body_position[0], digits) +
-                  '\t\t{:.{}f}'.format(body_position[1], digits)
-                  )
+            # print('vel leg frame:\t' +
+            #       '(ACC) {:.{}f}'.format(
+            #           acceleration_along_leg_frame, digits) +
+            #       '\t(grav) {:.{}f}'.format(f_gravity_torque, digits) +
+            #       '\t(VEL) {:.{}f}'.format(
+            #           current_velocity_along_leg_frame, digits) +
+            #       '\t{:.{}f}'.format(
+            #           current_velocity_perpendicular_to_leg_frame, digits) +
+            #       '\t{:.{}f}'.format(current_state[4], digits) +
+            #       '\t(BETA) {:.{}f}'.format(beta, digits) +
+            #       '\t{:.{}f}'.format(
+            #           current_state[0+5] * math.sin(beta), digits) +
+            #       '\t{:.{}f}'.format(
+            #           current_state[1+5] * math.cos(beta), digits) +
+            #       '\t(BODY POS) {:.{}f}'.format(body_position[0], digits) +
+            #       '\t{:.{}f}'.format(body_position[1], digits) +
+            #       '\t(VEL change) {:.{}f}'.format(new_velocity_along_leg_frame * math.sin(beta), digits) +
+            #       '\t{:.{}f}'.format(new_velocity_perpendicular_to_leg_frame * math.cos(beta), digits) +
+            #       '\t{:.{}f}'.format(new_velocity_along_leg_frame * math.cos(beta), digits) +
+            #       '\t{:.{}f}'.format(
+            #           new_velocity_perpendicular_to_leg_frame * math.sin(beta), digits)
+            #       )
 
             # Convert back to euclidean coordinates
             # Set new speeds
@@ -431,7 +446,7 @@ class Hopper2dController(VectorSystem):
         return lift_off_plus_state[0+5]
 
     def is_foot_in_contact(self, state):
-        foot_point_in_world = self.get_foot_position_from(state)
+        foot_point_in_world = self.get_leg_tip_position_from(state)
         # print('foot_point_in_world')
         # print(foot_point_in_world)
         # and state[4] < self.l_max
