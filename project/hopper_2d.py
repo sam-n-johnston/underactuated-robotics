@@ -233,14 +233,113 @@ class Hopper2dController(VectorSystem):
         distance = math.sqrt(x_diff ** 2.0 + z_diff ** 2.0)
         return distance
 
+    def get_liftoff_minus_state_based_on_touchdown_plus_state(self, touchdown_plus_state):
+        timestep = 0.0005
+        current_time = 0.0
+        current_state = np.copy(touchdown_plus_state)
+        foot_position = self.get_leg_tip_position_from(
+            touchdown_plus_state)
+        found_liftoff_minus_state = False
+        f_gravity_body = self.m_b * self.gravity
+        f_gravity_foot = self.m_f * self.gravity
+        body_position = self.get_body_position_from(current_state)
+        beta = self.get_beta_from(foot_position, body_position)
+        previous_velocity_along_leg_frame = current_state[0+5] * math.sin(
+            beta) + current_state[1+5] * math.cos(beta)
+        previous_velocity_perpendicular_to_leg_frame = current_state[0+5] * math.cos(
+            beta) + current_state[1+5] * math.sin(beta)
+
+        while not found_liftoff_minus_state and current_time < 2.0:
+            l_rest = 1.0
+            spring_force = self.spring_force(l_rest - current_state[4])
+
+            # Spring is pushing back only the body, not the foot's mass
+            f_gravity_along_leg_frame = f_gravity_body * math.cos(beta)
+            leg_force = spring_force - f_gravity_along_leg_frame
+            acceleration_along_leg_frame = leg_force / self.m_b
+
+            # Calculate rotational acceleration
+            body_position = self.get_body_position_from(current_state)
+            leg_length = self.get_leg_length(foot_position, body_position)
+
+            f_gravity_body_perpendicular_to_leg_frame = f_gravity_body * \
+                math.sin(beta)
+            f_gravity_foot_perpendicular_to_leg_frame = f_gravity_foot * \
+                math.sin(beta)
+
+            f_gravity_foot_torque = f_gravity_foot_perpendicular_to_leg_frame * \
+                self.hopper_leg_length / 2.0
+            f_gravity_body_torque = f_gravity_body_perpendicular_to_leg_frame * leg_length
+
+            f_gravity_torque = f_gravity_body_torque + f_gravity_foot_torque
+
+            # Calculate moment of inertia
+            moment_of_inertia = self.m_f * \
+                (self.hopper_leg_length / 2.0) ** 2.0 + \
+                self.m_b * (leg_length) ** 2.0
+
+            rotational_acceleration = f_gravity_torque / moment_of_inertia
+            acceleration_perpendicular_to_leg_frame = rotational_acceleration * leg_length
+
+            # Update those velocities based on the rotational acceleration
+            new_velocity_along_leg_frame = previous_velocity_along_leg_frame + \
+                acceleration_along_leg_frame * timestep
+            new_velocity_perpendicular_to_leg_frame = previous_velocity_perpendicular_to_leg_frame - \
+                acceleration_perpendicular_to_leg_frame * timestep
+
+            previous_velocity_along_leg_frame = new_velocity_along_leg_frame
+            previous_velocity_perpendicular_to_leg_frame = new_velocity_perpendicular_to_leg_frame
+
+            # Convert back to euclidean coordinates
+            current_state[0+5] = new_velocity_along_leg_frame * \
+                math.sin(beta) - \
+                new_velocity_perpendicular_to_leg_frame * math.cos(beta)
+            current_state[1+5] = new_velocity_along_leg_frame * \
+                math.cos(beta) + \
+                new_velocity_perpendicular_to_leg_frame * math.sin(beta)
+
+            # Set new positions
+            current_state[0] = current_state[0] + current_state[0+5] * timestep
+            current_state[1] = current_state[1] + current_state[1+5] * timestep
+
+            # Set alpha - theta is usually constant
+            new_alpha = beta - current_state[2]
+            current_state[3] = new_alpha
+
+            body_position = self.get_body_position_from(current_state)
+            leg_length = self.get_leg_length(foot_position, body_position)
+
+            current_state[4] = leg_length - self.hopper_leg_length / \
+                2.0 - self.body_size_height / 2.0
+
+            # Add small l buffer
+            if current_state[4] > self.l_max + 0.013:
+                current_state[4] = self.l_max + 0.013
+
+            # Get beta based on
+            beta = self.get_beta_from(foot_position, body_position)
+
+            current_time = current_time + timestep\
+
+            print(current_state)
+
+            if not self.is_foot_in_contact(current_state):
+                print('FOOT liftoff!')
+                found_liftoff_minus_state = True
+
+        if not found_liftoff_minus_state:
+            raise Exception('The robot never left the ground')
+
+        return current_state
+
     def get_liftoff_minus_state_based_on_flight_state(self, flight_phase):
         touchdown_minus_state = self.get_touchdown_minus_state_based_on_flight_state(
             flight_phase)
         timestep = 0.0005
         current_time = 0.0
         current_state = np.copy(touchdown_minus_state)
-        print('starting..')
-        print(current_state)
+        # print('starting..')
+        # print(current_state)
         foot_position = self.get_leg_tip_position_from(
             touchdown_minus_state)
         found_liftoff_minus_state = False
@@ -344,10 +443,10 @@ class Hopper2dController(VectorSystem):
             current_time = current_time + timestep
 
             if current_state[4] > 0.501:
-                print('\nIn the air now!')
-                print(current_time)
-                print(beta)
-                print(current_state[4])
+                # print('\nIn the air now!')
+                # print(current_time)
+                # print(beta)
+                # print(current_state[4])
                 found_liftoff_minus_state = True
 
         if not found_liftoff_minus_state:
@@ -367,19 +466,61 @@ class Hopper2dController(VectorSystem):
 
         return kinetic_energy_lost_in_foot
 
+    #     return 0.0
+
+    # def get_liftoff_plus_state_based_on_liftoff_minus_state(self, liftoff_minus_state):
+    #     return 0.0
+
+    # def get_apex_state_based_on_liftoff_minus_state(self, liftoff_minus_state):
+    #     liftoff_plus_state = self.get_liftoff_plus_state_based_on_liftoff_minus_state(
+    #         liftoff_minus_state)
+
+    #     flight_xd = self.calculate_apex_xd_based_off_liftoff_plus(
+    #         liftoff_plus_state)
+    #     apex_z = self.calculate_apex_z_based_off_liftoff_plus(
+    #         liftoff_plus_state)
+
+    #     return 0.0
+
+    def get_touchdown_beta_for_liftoff_beta(self, current_state, desired_liftoff_beta):
+        # Controlled by setting touchdown beta
+        # TODO: Start here, create a test,
+        # set the desired lo+ beta and see if the controller can find it, then test in simulation
+        kp_beta = 0.1
+
+        state = current_state.copy()
+        # Set state to current value
+
+        for i in range(10):
+            liftoff_minus_state = self.get_liftoff_minus_state_based_on_flight_state(
+                state)
+
+            print('liftoff_minus_state')
+            print(liftoff_minus_state)
+
+            current_liftoff_beta = self.get_beta(
+                liftoff_minus_state[2], liftoff_minus_state[3])
+
+            print('liftoff_minus_state1')
+            print(current_liftoff_beta)
+            print('liftoff_minus_state2')
+            print(desired_liftoff_beta)
+
+            if current_liftoff_beta > desired_liftoff_beta:
+                # P controller
+                beta_diff = abs(current_liftoff_beta -
+                                desired_liftoff_beta)
+                state[3] = state[3] - kp_beta * beta_diff
+            elif current_liftoff_beta < desired_liftoff_beta:
+                # P controller
+                beta_diff = abs(current_liftoff_beta -
+                                desired_liftoff_beta)
+                state[3] = state[3] + kp_beta * beta_diff
+
+        return self.get_beta(state[2], state[3])
+
     def controller(self):
-        # 1. For the desired height & speed, calculate liftoff angle =>
-        #      Check if this assumption is correct. I'm assuming that liftoff angle
-        #      will be the same as the liftoff speed vector of the robot. I can verify
-        #      at least part of this with another test where the robot has an initial leg
-        #      position and horizontal speed.
-        # 2. Estimate stance energy loss and set l_rest actuation
-        #      Check if I need to refine the energy loss if the touchdown and liftoff
-        #      are not with the leg straight down
-        # 3. Find the correct leg angle for touchdown
-        #      Calculate forward in time to see if the liftoff angle will be correct
-        # 4. Repeat steps 2 and 3 until convergence (since one affects the other)
-        return
+        return 1.0
 
     def calculate_energy_loss_by_lift_off(self, flight_phase):
         # Get total energy minus (before impact)

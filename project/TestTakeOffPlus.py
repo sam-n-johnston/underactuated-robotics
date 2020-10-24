@@ -137,6 +137,147 @@ class TestTakeOffPlus(unittest.TestCase):
             simulated_max_xd, 0.0, 'max horizontal speed (xd)', 1
         )
 
+    def test_energy_loss_by_stance_phase_1(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[4] = 0.5  # l distance
+        apex_state[0+5] = 0.25  # xd
+
+        # Use Simulate2dHopper to simulate
+        hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
+                                                                    duration=2,
+                                                                    desired_lateral_velocity=0.0)
+
+        # Find first apex in simulation
+        first_apex_index = self.find_first_apex_in_simulation(state_log)
+
+        # Get simulated max height (z) & horizontal speed (xd) at first apex
+        simulated_max_z = self.find_simulated_max_z(
+            state_log, first_apex_index)
+        simulated_max_xd = self.find_simulated_max_xd(
+            state_log, first_apex_index)
+
+        # Calculate max
+        calculated_energy_loss = controller.calculate_energy_loss_by_stance_phase(
+            apex_state)
+        # Transforming all that energy into potential energy
+        calculated_height_lost = calculated_energy_loss / \
+            controller.total_mass / controller.gravity
+        new_height = apex_state[1] - calculated_height_lost
+        print('Calculated energy loss: ' + str(calculated_energy_loss))
+        print('Calculated new height: ' + str(new_height))
+        print('Simulated new height: ' + str(simulated_max_z))
+
+        # Compare both values
+        self.print_and_assert_almost_equal_simulated_and_calculated(
+            simulated_max_z, new_height, 'max height (z)', 1
+        )
+        self.print_and_assert_almost_equal_simulated_and_calculated(
+            simulated_max_xd, 0.0, 'max horizontal speed (xd)', 1
+        )
+
+    # def test_liftoff_beta_calculation(self):
+    #     apex_state = np.zeros(10)
+    #     apex_state[1] = 3.5  # height
+    #     apex_state[4] = 0.5  # l distance
+
+    #     # Use Simulate2dHopper to simulate
+    #     hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
+    #                                                                 duration=2,
+    #                                                                 desired_lateral_velocity=0.0)
+
+    #     touchdown_beta = controller.get_touchdown_beta_for_liftoff_beta(
+    #         apex_state, 0.0)
+
+    #     self.assertAlmostEqual(touchdown_beta, 0.0, 1)
+
+    # def test_liftoff_beta_calculation_1(self):
+    #     apex_state = np.zeros(10)
+    #     apex_state[1] = 3.5  # height
+    #     apex_state[4] = 0.5  # l distance
+    #     desired_liftoff_beta = 0.25
+
+    #     # Use Simulate2dHopper to simulate
+    #     hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
+    #                                                                 duration=2,
+    #                                                                 desired_lateral_velocity=0.0)
+
+    #     calculated_touchdown_beta = controller.get_touchdown_beta_for_liftoff_beta(
+    #         apex_state, desired_liftoff_beta)
+
+    #     print('Calculated beta: ' +
+    #           '{:.{}f}'.format(calculated_touchdown_beta, 2))
+
+    #     # Change apex state to have calculated_touchdown_beta
+    #     new_alpha = calculated_touchdown_beta - apex_state[2]
+    #     apex_state[3] = new_alpha
+    #     print('NEW STATE')
+    #     print(apex_state)
+
+    #     # Simulate
+    #     hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
+    #                                                                 duration=2,
+    #                                                                 desired_lateral_velocity=0.0)
+
+    #     # Find lo beta
+    #     simulated_state_index_at_liftoff_minus = self.find_simulated_state_index_at_liftoff_minus(
+    #         state_log, controller)
+
+    #     simulated_state_at_liftoff_minus = state_log.data(
+    #     )[:, simulated_state_index_at_liftoff_minus]
+    #     print('NEW SIMUALTED STATE')
+    #     print(simulated_state_at_liftoff_minus)
+
+    #     simulate_beta_at_liftoff_minus = controller.get_beta(
+    #         simulated_state_at_liftoff_minus[2], simulated_state_at_liftoff_minus[3])
+
+    #     self.assertAlmostEqual(
+    #         desired_liftoff_beta, simulate_beta_at_liftoff_minus, 1)
+
+    def test_lifoff_minus_state_based_on_touchdown_plus_state(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[4] = 0.5  # l distance
+
+        # Use Simulate2dHopper to simulate
+        hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
+                                                                    duration=2,
+                                                                    desired_lateral_velocity=0.0)
+
+        # Get simulated touchdown plus state
+        simulated_state_index_at_touchdown_plus = self.find_simulated_state_index_at_touchdown_plus(
+            state_log, controller)
+        simulated_state_at_touchdown_plus = state_log.data(
+        )[:, simulated_state_index_at_touchdown_plus]
+
+        print('simulated_state_at_touchdown_plus')
+        print(simulated_state_at_touchdown_plus)
+
+        # Get calcualted touchdown minus state
+        calculated_state_index_at_liftoff_minus = controller.get_liftoff_minus_state_based_on_touchdown_plus_state(
+            simulated_state_at_touchdown_plus)
+
+        print('calculated_state_index_at_liftoff_minus')
+        print(calculated_state_index_at_liftoff_minus)
+
+        # Get simulated liftoff minus state
+        simulated_state_index_at_liftoff_minus = self.find_simulated_state_index_at_liftoff_minus(
+            state_log, controller)
+        simulated_state_at_liftoff_minus = state_log.data(
+        )[:, simulated_state_index_at_liftoff_minus]
+
+        print('simulated_state_at_liftoff_minus')
+        print(simulated_state_at_liftoff_minus)
+
+        # Compare both values
+        for i in range(calculated_state_index_at_liftoff_minus.shape[0]):
+            self.print_and_assert_almost_equal_simulated_and_calculated(
+                simulated_state_at_liftoff_minus[i],
+                calculated_state_index_at_liftoff_minus[i],
+                'state at touchdown minus [' + str(i) + ']',
+                1 if i < 8 else 0
+            )
+
     def test_touchdown_minus_state(self):
         apex_state = np.zeros(10)
         apex_state[1] = 3.5  # height
@@ -164,7 +305,7 @@ class TestTakeOffPlus(unittest.TestCase):
     def test_touchdown_minus_state_with_theta(self):
         apex_state = np.zeros(10)
         apex_state[1] = 3.5  # height
-        apex_state[2] = 0.1  # alpha
+        apex_state[2] = 0.1  # theta
         apex_state[4] = 0.5  # l distance
 
         self.touchdown_minus_state_based_on_flight_state(apex_state)
@@ -174,6 +315,14 @@ class TestTakeOffPlus(unittest.TestCase):
         apex_state[1] = 3.5  # height
         apex_state[2] = 0.1  # theta
         apex_state[3] = -0.2  # alpha
+        apex_state[4] = 0.5  # l distance
+
+        self.touchdown_minus_state_based_on_flight_state(apex_state)
+
+    def test_touchdown_minus_state_with_strong_alpha(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[3] = 0.4  # alpha
         apex_state[4] = 0.5  # l distance
 
         self.touchdown_minus_state_based_on_flight_state(apex_state)
@@ -525,15 +674,15 @@ class TestTakeOffPlus(unittest.TestCase):
 
     def find_simulated_state_index_at_touchdown_plus(self, state_log, controller):
         index = 0
-        touchdown_minus_index = -1
+        touchdown_plus_index = -1
         number_of_states = len(state_log.data()[1, :])
 
-        while touchdown_minus_index == -1 and index < number_of_states:
+        while touchdown_plus_index == -1 and index < number_of_states:
             index = index + 1
             if controller.is_foot_in_contact(state_log.data()[:, index]):
-                touchdown_minus_index = index
+                touchdown_plus_index = index
 
-        return touchdown_minus_index
+        return touchdown_plus_index
 
     def find_simulated_state_index_at_liftoff_minus(self, state_log, controller):
         # Start at touchdown plus
