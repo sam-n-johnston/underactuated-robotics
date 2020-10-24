@@ -316,7 +316,7 @@ class TestTakeOffPlus(unittest.TestCase):
         for i in range(10):
             print('simulated_state_at_liftoff_minus')
             print(state_log.data(
-            )[:, simulated_state_index_at_liftoff_minus + i])
+            )[:, simulated_state_index_at_liftoff_minus - i])
 
         # Compare both values
         for i in range(calculated_state_index_at_liftoff_minus.shape[0] - 1):

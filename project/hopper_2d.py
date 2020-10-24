@@ -65,7 +65,6 @@ class Hopper2dController(VectorSystem):
         # Based on the potential energy from plant.CalcPotentialEnergy(plant_context)
         self.total_mass = 3.095499
         # Based on the potential energy from plant.CalcPotentialEnergy(plant_context)
-        mass_factor = 2.81409
         self.m_f = 0.1  # If I increase this mass, it decreases the energy loss... this doesn't make any sense
         self.m_b = self.total_mass - self.m_f
         self.l_max = 0.5
@@ -247,7 +246,10 @@ class Hopper2dController(VectorSystem):
         previous_velocity_along_leg_frame = current_state[0+5] * math.sin(
             beta) + current_state[1+5] * math.cos(beta)
         previous_velocity_perpendicular_to_leg_frame = current_state[0+5] * math.cos(
-            beta) + current_state[1+5] * math.sin(beta)
+            beta) - current_state[1+5] * math.sin(beta)
+
+        print('initial previous_velocity_perpendicular_to_leg_frame (pos)')
+        print(previous_velocity_perpendicular_to_leg_frame)
 
         while not found_liftoff_minus_state and current_time < 2.0:
             l_rest = 1.0
@@ -259,7 +261,6 @@ class Hopper2dController(VectorSystem):
             acceleration_along_leg_frame = leg_force / self.m_b
 
             # Calculate rotational acceleration
-            body_position = self.get_body_position_from(current_state)
             leg_length = self.get_leg_length(foot_position, body_position)
 
             f_gravity_body_perpendicular_to_leg_frame = f_gravity_body * \
@@ -278,13 +279,14 @@ class Hopper2dController(VectorSystem):
                 (self.hopper_leg_length / 2.0) ** 2.0 + \
                 self.m_b * (leg_length) ** 2.0
 
+            # This means that this is too large
             rotational_acceleration = f_gravity_torque / moment_of_inertia
             acceleration_perpendicular_to_leg_frame = rotational_acceleration * leg_length
 
             # Update those velocities based on the rotational acceleration
             new_velocity_along_leg_frame = previous_velocity_along_leg_frame + \
                 acceleration_along_leg_frame * timestep
-            new_velocity_perpendicular_to_leg_frame = previous_velocity_perpendicular_to_leg_frame - \
+            new_velocity_perpendicular_to_leg_frame = previous_velocity_perpendicular_to_leg_frame + \
                 acceleration_perpendicular_to_leg_frame * timestep
 
             previous_velocity_along_leg_frame = new_velocity_along_leg_frame
@@ -292,7 +294,7 @@ class Hopper2dController(VectorSystem):
 
             # Convert back to euclidean coordinates
             current_state[0+5] = new_velocity_along_leg_frame * \
-                math.sin(beta) - \
+                math.sin(beta) + \
                 new_velocity_perpendicular_to_leg_frame * math.cos(beta)
             current_state[1+5] = new_velocity_along_leg_frame * \
                 math.cos(beta) + \
@@ -313,8 +315,9 @@ class Hopper2dController(VectorSystem):
                 2.0 - self.body_size_height / 2.0
 
             # Add small l buffer
-            if current_state[4] > self.l_max + 0.013:
-                current_state[4] = self.l_max + 0.013
+            l_buffer = 0.013
+            if current_state[4] > self.l_max + l_buffer:
+                current_state[4] = self.l_max + l_buffer
 
             # Get beta based on
             beta = self.get_beta_from(foot_position, body_position)
