@@ -176,20 +176,20 @@ class TestTakeOffPlus(unittest.TestCase):
             simulated_max_xd, 0.0, 'max horizontal speed (xd)', 1
         )
 
-    # def test_liftoff_beta_calculation(self):
-    #     apex_state = np.zeros(10)
-    #     apex_state[1] = 3.5  # height
-    #     apex_state[4] = 0.5  # l distance
+    def test_liftoff_beta_calculation(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[4] = 0.5  # l distance
 
-    #     # Use Simulate2dHopper to simulate
-    #     hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
-    #                                                                 duration=2,
-    #                                                                 desired_lateral_velocity=0.0)
+        # Use Simulate2dHopper to simulate
+        hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
+                                                                    duration=2,
+                                                                    desired_lateral_velocity=0.0)
 
-    #     touchdown_beta = controller.get_touchdown_beta_for_liftoff_beta(
-    #         apex_state, 0.0)
+        touchdown_beta = controller.get_touchdown_beta_for_liftoff_beta(
+            apex_state, 0.0)
 
-    #     self.assertAlmostEqual(touchdown_beta, 0.0, 1)
+        self.assertAlmostEqual(touchdown_beta, 0.0, 1)
 
     # def test_liftoff_beta_calculation_1(self):
     #     apex_state = np.zeros(10)
