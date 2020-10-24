@@ -248,9 +248,6 @@ class Hopper2dController(VectorSystem):
         previous_velocity_perpendicular_to_leg_frame = current_state[0+5] * math.cos(
             beta) - current_state[1+5] * math.sin(beta)
 
-        print('initial previous_velocity_perpendicular_to_leg_frame (pos)')
-        print(previous_velocity_perpendicular_to_leg_frame)
-
         while not found_liftoff_minus_state and current_time < 2.0:
             l_rest = 1.0
             spring_force = self.spring_force(l_rest - current_state[4])
@@ -383,16 +380,8 @@ class Hopper2dController(VectorSystem):
             liftoff_minus_state = self.get_liftoff_minus_state_based_on_flight_state(
                 state)
 
-            print('liftoff_minus_state')
-            print(liftoff_minus_state)
-
             current_liftoff_beta = self.get_beta(
                 liftoff_minus_state[2], liftoff_minus_state[3])
-
-            print('liftoff_minus_state1')
-            print(current_liftoff_beta)
-            print('liftoff_minus_state2')
-            print(desired_liftoff_beta)
 
             if current_liftoff_beta > desired_liftoff_beta:
                 # P controller

@@ -191,48 +191,54 @@ class TestTakeOffPlus(unittest.TestCase):
 
         self.assertAlmostEqual(touchdown_beta, 0.0, 1)
 
-    # def test_liftoff_beta_calculation_1(self):
-    #     apex_state = np.zeros(10)
-    #     apex_state[1] = 3.5  # height
-    #     apex_state[4] = 0.5  # l distance
-    #     desired_liftoff_beta = 0.25
+    def test_liftoff_beta_calculation_1(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[4] = 0.5  # l distance
+        desired_liftoff_beta = 0.25
 
-    #     # Use Simulate2dHopper to simulate
-    #     hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
-    #                                                                 duration=2,
-    #                                                                 desired_lateral_velocity=0.0)
+        # Use Simulate2dHopper to simulate
+        hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
+                                                                    duration=2,
+                                                                    desired_lateral_velocity=0.0)
 
-    #     calculated_touchdown_beta = controller.get_touchdown_beta_for_liftoff_beta(
-    #         apex_state, desired_liftoff_beta)
+        calculated_touchdown_beta = controller.get_touchdown_beta_for_liftoff_beta(
+            apex_state, desired_liftoff_beta)
 
-    #     print('Calculated beta: ' +
-    #           '{:.{}f}'.format(calculated_touchdown_beta, 2))
+        print('Calculated beta: ' +
+              '{:.{}f}'.format(calculated_touchdown_beta, 2))
 
-    #     # Change apex state to have calculated_touchdown_beta
-    #     new_alpha = calculated_touchdown_beta - apex_state[2]
-    #     apex_state[3] = new_alpha
-    #     print('NEW STATE')
-    #     print(apex_state)
+        # Change apex state to have calculated_touchdown_beta
+        new_alpha = calculated_touchdown_beta - apex_state[2]
+        apex_state[3] = new_alpha
+        print('NEW STATE')
+        print(apex_state)
 
-    #     # Simulate
-    #     hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
-    #                                                                 duration=2,
-    #                                                                 desired_lateral_velocity=0.0)
+        # Simulate
+        hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
+                                                                    duration=2,
+                                                                    desired_lateral_velocity=0.0)
 
-    #     # Find lo beta
-    #     simulated_state_index_at_liftoff_minus = self.find_simulated_state_index_at_liftoff_minus(
-    #         state_log, controller)
+        # Find lo beta
+        simulated_state_index_at_liftoff_minus = self.find_simulated_state_index_at_liftoff_minus(
+            state_log, controller)
 
-    #     simulated_state_at_liftoff_minus = state_log.data(
-    #     )[:, simulated_state_index_at_liftoff_minus]
-    #     print('NEW SIMUALTED STATE')
-    #     print(simulated_state_at_liftoff_minus)
+        simulated_state_at_liftoff_minus = state_log.data(
+        )[:, simulated_state_index_at_liftoff_minus]
+        print('NEW SIMUALTED STATE')
+        print(simulated_state_at_liftoff_minus)
 
-    #     simulate_beta_at_liftoff_minus = controller.get_beta(
-    #         simulated_state_at_liftoff_minus[2], simulated_state_at_liftoff_minus[3])
+        print('desired_liftoff_beta')
+        print(desired_liftoff_beta)
 
-    #     self.assertAlmostEqual(
-    #         desired_liftoff_beta, simulate_beta_at_liftoff_minus, 1)
+        simulate_beta_at_liftoff_minus = controller.get_beta(
+            simulated_state_at_liftoff_minus[2], simulated_state_at_liftoff_minus[3])
+
+        print('simulate_beta_at_liftoff_minus')
+        print(simulate_beta_at_liftoff_minus)
+
+        self.assertAlmostEqual(
+            desired_liftoff_beta, simulate_beta_at_liftoff_minus, 1)
 
     def test_lifoff_minus_state_based_on_touchdown_plus_state(self):
         apex_state = np.zeros(10)
