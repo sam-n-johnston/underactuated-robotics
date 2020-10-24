@@ -321,10 +321,7 @@ class Hopper2dController(VectorSystem):
 
             current_time = current_time + timestep\
 
-            print(current_state)
-
             if not self.is_foot_in_contact(current_state):
-                print('FOOT liftoff!')
                 found_liftoff_minus_state = True
 
         if not found_liftoff_minus_state:
