@@ -166,6 +166,18 @@ class Hopper2dController(VectorSystem):
         # Kinectic energy
         zd_energy = total_energy_flight - xd_flight_energy - \
             potential_energy_foot - potential_energy_body - spring_potential_energy
+
+        if zd_energy < 0.0:
+            print('WARNING: zd_energy is below 0! Setting to 0 and continuing.')
+            print('energies')
+            print(total_energy_flight)
+            print(xd_flight_energy)
+            print(potential_energy_foot)
+            print(potential_energy_body)
+            print(spring_potential_energy)
+
+            zd_energy = 0.0
+
         zd_minus = -math.sqrt(2.0 * zd_energy / (self.m_b + self.m_f))
 
         # Get time estimation
@@ -408,10 +420,16 @@ class Hopper2dController(VectorSystem):
         return self.get_beta(state[2], state[3])
 
     def PD_controller_thigh_torque(self, current_beta, current_betad, desired_beta, desired_betad):
-        Kp = -50.
+        Kp = -25.
         Kv = -1.
 
         return Kp * (current_beta - desired_beta) + Kv * (current_betad - desired_betad)
+
+    def PD_controller_thigh_torque_landed(self, theta, thetad):
+        Kp = 10.
+        Kv = 10.
+
+        return Kp * (theta) + Kv * (thetad)
 
     def calculate_thigh_torque(self, current_state):
         if self.is_foot_in_contact(current_state) and self.current_desired_beta:
@@ -421,13 +439,17 @@ class Hopper2dController(VectorSystem):
 
         if self.is_foot_in_contact(current_state):
             self.current_desired_beta = None
+
+            return self.PD_controller_thigh_torque_landed(current_state[2], current_state[2+5])
+
+        if current_state[1+5] > 4.0:
             return 0.0
 
         if self.current_desired_beta:
             current_beta = self.get_beta(current_state[2], current_state[3])
             current_betad = self.get_beta(
                 current_state[2+5], current_state[3+5])
-            desired_beta = self.current_desired_beta
+            desired_beta = self.current_desired_beta * 1.0  # To account for movement
             desired_betad = 0.0
 
             thigh_torque = self.PD_controller_thigh_torque(
