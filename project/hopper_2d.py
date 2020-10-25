@@ -249,6 +249,8 @@ class Hopper2dController(VectorSystem):
             beta) - current_state[1+5] * math.sin(beta)
 
         while not found_liftoff_minus_state and current_time < 2.0:
+            if bottom_reached:
+                l_rest = 2.0  # to receive in argument
             l_rest = 1.0
             spring_force = self.spring_force(l_rest - current_state[4])
 
@@ -353,6 +355,12 @@ class Hopper2dController(VectorSystem):
 
     #     return 0.0
 
+    # TODO: Based on desired height & xd => find desired liftoff beta (easy) (calculate_lift_off_angle => to test)
+    # TODO: Based on desired height & xd => find desired liftoff_plus speed, then liftoff_minus speed
+    # TODO: simulate with various l when at the bottom of trajectory (hard)
+    # TODO: find touchdown beta for desired liftoff beta. fix touchdown beta.
+    # find l for deired liftoff_minus speed. Fix l. repeat
+    # TODO: controller that calculates this and actuates to the desired place
     # def get_liftoff_plus_state_based_on_liftoff_minus_state(self, liftoff_minus_state):
     #     return 0.0
 
@@ -367,13 +375,13 @@ class Hopper2dController(VectorSystem):
 
     #     return 0.0
 
-    def get_touchdown_beta_for_liftoff_beta(self, current_state, desired_liftoff_beta):
+    def get_touchdown_beta_for_liftoff_beta(self, flight_state, desired_liftoff_beta):
         # Controlled by setting touchdown beta
         # TODO: Start here, create a test,
         # set the desired lo+ beta and see if the controller can find it, then test in simulation
         kp_beta = 0.1
 
-        state = current_state.copy()
+        state = flight_state.copy()
         # Set state to current value
 
         for i in range(10):
