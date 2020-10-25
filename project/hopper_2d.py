@@ -428,10 +428,11 @@ class Hopper2dController(VectorSystem):
         return Kp * (current_beta - desired_beta) + Kv * (current_betad - desired_betad)
 
     def PD_controller_thigh_torque_landed(self, theta, thetad):
-        Kp = 10.
+        desired_theta = -0.1
+        Kp = 25.
         Kv = 10.
 
-        return Kp * (theta) + Kv * (thetad)
+        return Kp * (theta - desired_theta) + Kv * (thetad)
 
     def calculate_thigh_torque(self, current_state):
         if self.is_foot_in_contact(current_state) and self.current_desired_touchdown_beta:
