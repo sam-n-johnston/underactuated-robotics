@@ -198,23 +198,45 @@ class TestTakeOffPlus(unittest.TestCase):
         apex_state[4] = 0.5  # l distance
         desired_liftoff_beta = 0.25
 
+        self.liftoff_beta_calculation(apex_state, desired_liftoff_beta)
+
+    def test_liftoff_beta_calculation_2(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[2] = 0.5  # theta
+        apex_state[4] = 0.5  # l distance
+        desired_liftoff_beta = 0.25
+
+        self.liftoff_beta_calculation(apex_state, desired_liftoff_beta)
+
+    def test_liftoff_beta_calculation_3(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[2] = 0.5  # theta
+        apex_state[4] = 0.5  # l distance
+        apex_state[2+5] = 1.0  # thetad
+        desired_liftoff_beta = 0.25
+
+        self.liftoff_beta_calculation(apex_state, desired_liftoff_beta)
+
+    def liftoff_beta_calculation(self, initial_state, desired_liftoff_beta):
         # Use Simulate2dHopper to simulate
-        hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
+        hopper, controller, state_log, animation = Simulate2dHopper(x0=initial_state,
                                                                     duration=2,
                                                                     actuators_off=True)
 
         calculated_touchdown_beta = controller.get_touchdown_beta_for_liftoff_beta(
-            apex_state, desired_liftoff_beta)
+            initial_state, desired_liftoff_beta)
 
-        print('Calculated beta: ' +
+        print('Calculated desired touchdown beta: ' +
               '{:.{}f}'.format(calculated_touchdown_beta, 2))
 
         # Change apex state to have calculated_touchdown_beta
-        new_alpha = calculated_touchdown_beta - apex_state[2]
-        apex_state[3] = new_alpha
+        new_alpha = calculated_touchdown_beta - initial_state[2]
+        initial_state[3] = new_alpha
 
         # Simulate
-        hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
+        hopper, controller, state_log, animation = Simulate2dHopper(x0=initial_state,
                                                                     duration=2,
                                                                     actuators_off=True)
 
