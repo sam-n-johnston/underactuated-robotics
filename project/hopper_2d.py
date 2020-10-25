@@ -53,6 +53,7 @@ class Hopper2dController(VectorSystem):
         self.actuators_off = actuators_off
         self.print_period = print_period
         self.last_print_time = -print_period
+        self.current_desired_beta = None
         # Remember what the index of the foot is
         self.foot_frame = hopper.GetFrameByName("foot")
         self.body_frame = hopper.GetFrameByName("body")
@@ -430,7 +431,13 @@ class Hopper2dController(VectorSystem):
             desired_beta = self.current_desired_beta
             desired_betad = 0.0
 
-            return self.PD_controller_thigh_torque(current_beta, current_betad, desired_beta, desired_betad)
+            thigh_torque = self.PD_controller_thigh_torque(
+                current_beta, current_betad, desired_beta, desired_betad)
+            l_rest = 1.0  # To Calculate
+            leg_compression_amount = l_rest - current_state[4]
+            l_force = self.K_l * leg_compression_amount
+
+            return [thigh_torque, l_force]
 
         self.current_desired_beta = self.get_touchdown_beta_for_liftoff_beta(
             current_state, desired_liftoff_angle)
@@ -543,9 +550,6 @@ class Hopper2dController(VectorSystem):
         return (2 * self.gravity * self.desired_height) ** (1. / 2.)
 
     def calculate_liftoff_angle(self):
-        print('calculate_liftoff_angle')
-        print(self.desired_lateral_velocity)
-        print(self.calculate_desired_liftoff_plus_zd())
         return math.atan2(self.desired_lateral_velocity, self.calculate_desired_liftoff_plus_zd())
 
     def calculate_time_required_btwn_lo_and_td(self):
