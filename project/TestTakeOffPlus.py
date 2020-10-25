@@ -36,7 +36,7 @@ class TestTakeOffPlus(unittest.TestCase):
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=state_1,
                                                                     duration=0.0,
-                                                                    desired_lateral_velocity=0.0)
+                                                                    actuators_off=True)
 
         # Find calculated energy at apex
         calculated_apex_energy_1 = controller.calculate_total_energy(state_1)
@@ -73,7 +73,7 @@ class TestTakeOffPlus(unittest.TestCase):
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
                                                                     duration=2,
-                                                                    desired_lateral_velocity=0.0)
+                                                                    actuators_off=True)
 
         # Find simulated energy at apex
         apex_energy = controller.calculate_total_energy(apex_state)
@@ -107,7 +107,7 @@ class TestTakeOffPlus(unittest.TestCase):
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
                                                                     duration=2,
-                                                                    desired_lateral_velocity=0.0)
+                                                                    actuators_off=True)
 
         # Find first apex in simulation
         first_apex_index = self.find_first_apex_in_simulation(state_log)
@@ -185,7 +185,7 @@ class TestTakeOffPlus(unittest.TestCase):
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
                                                                     duration=2,
-                                                                    desired_lateral_velocity=0.0)
+                                                                    actuators_off=True)
 
         touchdown_beta = controller.get_touchdown_beta_for_liftoff_beta(
             apex_state, 0.0)
@@ -201,7 +201,7 @@ class TestTakeOffPlus(unittest.TestCase):
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
                                                                     duration=2,
-                                                                    desired_lateral_velocity=0.0)
+                                                                    actuators_off=True)
 
         calculated_touchdown_beta = controller.get_touchdown_beta_for_liftoff_beta(
             apex_state, desired_liftoff_beta)
@@ -216,7 +216,7 @@ class TestTakeOffPlus(unittest.TestCase):
         # Simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
                                                                     duration=2,
-                                                                    desired_lateral_velocity=0.0)
+                                                                    actuators_off=True)
 
         # Find lo beta
         simulated_state_index_at_liftoff_minus = self.find_simulated_state_index_at_liftoff_minus(
@@ -249,7 +249,7 @@ class TestTakeOffPlus(unittest.TestCase):
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
                                                                     duration=2,
-                                                                    desired_lateral_velocity=0.0)
+                                                                    actuators_off=True)
 
         calculated_touchdown_beta = controller.get_touchdown_beta_for_liftoff_beta(
             apex_state, desired_liftoff_beta)
@@ -264,7 +264,7 @@ class TestTakeOffPlus(unittest.TestCase):
         # Simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
                                                                     duration=2,
-                                                                    desired_lateral_velocity=0.0)
+                                                                    actuators_off=True)
 
         # Find lo beta
         simulated_state_index_at_liftoff_minus = self.find_simulated_state_index_at_liftoff_minus(
@@ -295,7 +295,7 @@ class TestTakeOffPlus(unittest.TestCase):
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
                                                                     duration=2,
-                                                                    desired_lateral_velocity=0.0)
+                                                                    actuators_off=True)
 
         # Get simulated touchdown plus state
         simulated_state_index_at_touchdown_plus = self.find_simulated_state_index_at_touchdown_plus(
@@ -341,7 +341,7 @@ class TestTakeOffPlus(unittest.TestCase):
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
                                                                     duration=2,
-                                                                    desired_lateral_velocity=0.0)
+                                                                    actuators_off=True)
 
         # Get simulated touchdown plus state
         simulated_state_index_at_touchdown_plus = self.find_simulated_state_index_at_touchdown_plus(
@@ -430,7 +430,7 @@ class TestTakeOffPlus(unittest.TestCase):
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=flight_state,
                                                                     duration=2,
-                                                                    desired_lateral_velocity=0.0)
+                                                                    actuators_off=True)
 
         # Get simulated touchdown minus state
         simulated_state_index_at_touchdown_minus = self.find_simulated_state_index_at_touchdown_minus(
@@ -464,7 +464,7 @@ class TestTakeOffPlus(unittest.TestCase):
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=flight_state,
                                                                     duration=2,
-                                                                    desired_lateral_velocity=0.0)
+                                                                    actuators_off=True)
 
         # Get simulated touchdown minus state
         simulated_state_index_at_touchdown_plus = self.find_simulated_state_index_at_touchdown_plus(
@@ -512,7 +512,7 @@ class TestTakeOffPlus(unittest.TestCase):
     def foot_position(self, state, expected_foot_position):
         hopper, controller, state_log, animation = Simulate2dHopper(x0=state,
                                                                     duration=0.0,
-                                                                    desired_lateral_velocity=0.0)
+                                                                    actuators_off=True)
 
         simulated_foot_position = controller.get_leg_tip_position_from(
             state)
@@ -561,7 +561,7 @@ class TestTakeOffPlus(unittest.TestCase):
     def get_betas(self, state, expected_beta):
         hopper, controller, state_log, animation = Simulate2dHopper(x0=state,
                                                                     duration=0.0,
-                                                                    desired_lateral_velocity=0.0)
+                                                                    actuators_off=True)
 
         beta1 = controller.get_beta(theta=state[2], alpha=state[3])
 
@@ -583,7 +583,7 @@ class TestTakeOffPlus(unittest.TestCase):
     def get_body_center_of_mass_position(self, state, expected_position):
         hopper, controller, state_log, animation = Simulate2dHopper(x0=state,
                                                                     duration=0.0,
-                                                                    desired_lateral_velocity=0.0)
+                                                                    actuators_off=True)
 
         body_position = controller.get_body_position_from(state)
 
@@ -598,7 +598,7 @@ class TestTakeOffPlus(unittest.TestCase):
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
                                                                     duration=2,
-                                                                    desired_lateral_velocity=0.0)
+                                                                    actuators_off=True)
 
         # Get simulated liftoff minus state
         simulated_state_index_at_liftoff_minus = self.find_simulated_state_index_at_liftoff_minus(
@@ -650,7 +650,7 @@ class TestTakeOffPlus(unittest.TestCase):
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
                                                                     duration=2,
-                                                                    desired_lateral_velocity=0.0)
+                                                                    actuators_off=True)
 
         # Get simulated liftoff minus state
         print('STRAING================================================')
@@ -706,7 +706,7 @@ class TestTakeOffPlus(unittest.TestCase):
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=lift_off_plus_state,
                                                                     duration=2,
-                                                                    desired_lateral_velocity=0.0)
+                                                                    actuators_off=True)
 
         # Find first apex in simulation
         first_apex_index = self.find_first_apex_in_simulation(state_log)

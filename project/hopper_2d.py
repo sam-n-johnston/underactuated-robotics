@@ -33,7 +33,9 @@ from pydrake.systems.rendering import PoseBundle
 
 class Hopper2dController(VectorSystem):
     def __init__(self, hopper,
+                 actuators_off=False,
                  desired_lateral_velocity=0.0,
+                 desired_height=3.0,
                  print_period=0.0):
         # hopper = a rigid body tree representing the 1D hopper
         # desired_lateral_velocity = How fast should the controller
@@ -47,6 +49,8 @@ class Hopper2dController(VectorSystem):
         #  part of this output.)
         self.hopper = hopper
         self.desired_lateral_velocity = desired_lateral_velocity
+        self.desired_height = desired_height
+        self.actuators_off = actuators_off
         self.print_period = print_period
         self.last_print_time = -print_period
         # Remember what the index of the foot is
@@ -249,8 +253,8 @@ class Hopper2dController(VectorSystem):
             beta) - current_state[1+5] * math.sin(beta)
 
         while not found_liftoff_minus_state and current_time < 2.0:
-            if bottom_reached:
-                l_rest = 2.0  # to receive in argument
+            # if bottom_reached:
+            #     l_rest = 2.0  # to receive in argument
             l_rest = 1.0
             spring_force = self.spring_force(l_rest - current_state[4])
 
@@ -355,8 +359,6 @@ class Hopper2dController(VectorSystem):
 
     #     return 0.0
 
-    # TODO: Based on desired height & xd => find desired liftoff beta (easy) (calculate_lift_off_angle => to test)
-    # TODO: Based on desired height & xd => find desired liftoff_plus speed, then liftoff_minus speed
     # TODO: simulate with various l when at the bottom of trajectory (hard)
     # TODO: find touchdown beta for desired liftoff beta. fix touchdown beta.
     # find l for deired liftoff_minus speed. Fix l. repeat
@@ -404,8 +406,57 @@ class Hopper2dController(VectorSystem):
 
         return self.get_beta(state[2], state[3])
 
-    def controller(self):
-        return 1.0
+    def PD_controller_thigh_torque(self, current_beta, current_betad, desired_beta, desired_betad):
+        Kp = -20.
+        Kv = -5.
+
+        return Kp * (current_beta - desired_beta) + Kv * (current_betad - desired_betad)
+
+    # Should return an array with 2 items, one for torque of leg, one for l_rest
+    def controller(self, current_state):
+        if self.actuators_off:
+            l_rest = 1.0  # To Calculate
+            leg_compression_amount = l_rest - current_state[4]
+            l_force = self.K_l * leg_compression_amount
+
+            return [0.0, l_force]
+
+        desired_liftoff_angle = self.calculate_liftoff_angle()
+
+        if self.current_desired_beta:
+            current_beta = self.get_beta(current_state[2], current_state[3])
+            current_betad = self.get_beta(
+                current_state[2+5], current_state[3+5])
+            desired_beta = self.current_desired_beta
+            desired_betad = 0.0
+
+            return self.PD_controller_thigh_torque(current_beta, current_betad, desired_beta, desired_betad)
+
+        self.current_desired_beta = self.get_touchdown_beta_for_liftoff_beta(
+            current_state, desired_liftoff_angle)
+
+        current_beta = self.get_beta(current_state[2], current_state[3])
+        current_betad = self.get_beta(current_state[2+5], current_state[3+5])
+        desired_beta = self.current_desired_beta
+        desired_betad = 0.0
+
+        thigh_torque = self.PD_controller_thigh_torque(
+            current_beta, current_betad, desired_beta, desired_betad)
+        l_rest = 1.0  # To Calculate
+        leg_compression_amount = l_rest - current_state[4]
+        l_force = self.K_l * leg_compression_amount
+
+        return [thigh_torque, l_force]
+
+        # desired_liftoff_plus_zd = self.calculate_desired_liftoff_plus_zd
+        # desired_liftoff_plus_xd = self.desired_lateral_velocity
+        # desired_liftoff_minus_zd = self.calculate_liftoff_minus_zd_based_off_liftoff_plus_zd(
+        #     desired_liftoff_plus_zd)
+        # desired_liftoff_minus_xd = self.calculate_liftoff_minus_xd_based_off_liftoff_plus_xd(
+        #     desired_liftoff_plus_xd)
+
+        # current_beta = 0.0
+        # current_l_rest = self.l_rest
 
     def calculate_energy_loss_by_lift_off(self, flight_phase):
         # Get total energy minus (before impact)
@@ -441,6 +492,36 @@ class Hopper2dController(VectorSystem):
         # Calculate energy loss
         return total_energy_minus - total_energy_plus
 
+    def calculate_liftoff_plus_state_based_off_liftoff_minus_state(self, liftoff_minus_state):
+        liftoff_plus_state = liftoff_minus_state.copy()
+
+        # Get lift off minus speeds (before impact)
+        xd_minus = liftoff_minus_state[0+5]
+        zd_minus = liftoff_minus_state[1+5]
+
+        # Calculate body speeds plus (after impact)
+        xd_plus = self.m_b / (self.m_b + self.m_f) * xd_minus
+        zd_plus = self.m_b / (self.m_b + self.m_f) * zd_minus
+
+        # Calculate energy plus (after impact)
+        liftoff_plus_state[0+5] = xd_plus
+        liftoff_plus_state[1+5] = zd_plus
+
+        # Calculate energy loss
+        return liftoff_plus_state
+
+    def calculate_liftoff_plus_xd_based_off_liftoff_minus_xd(self, xd_minus):
+        return self.m_b / (self.m_b + self.m_f) * xd_minus
+
+    def calculate_liftoff_plus_zd_based_off_liftoff_minus_zd(self, zd_minus):
+        return self.m_b / (self.m_b + self.m_f) * zd_minus
+
+    def calculate_liftoff_minus_xd_based_off_liftoff_plus_xd(self, xd_plus):
+        return (self.m_b + self.m_f) / self.m_b * xd_plus
+
+    def calculate_liftoff_minus_zd_based_off_liftoff_plus_zd(self, zd_plus):
+        return (self.m_b + self.m_f) / self.m_b * zd_plus
+
     def calculate_apex_xd_based_off_liftoff_plus(self, lift_off_plus_state):
         return lift_off_plus_state[0+5]
 
@@ -458,19 +539,25 @@ class Hopper2dController(VectorSystem):
     def calculate_moment_of_inertia(self):
         return self.m_f * self.l_max ** 2.
 
-    def calculate_lift_off_angle(self):
-        return math.atan2(self.desired_lateral_velocity, (2 * self.gravity * self.desired_height) ** (1. / 2.))
+    def calculate_desired_liftoff_plus_zd(self):
+        return (2 * self.gravity * self.desired_height) ** (1. / 2.)
+
+    def calculate_liftoff_angle(self):
+        print('calculate_liftoff_angle')
+        print(self.desired_lateral_velocity)
+        print(self.calculate_desired_liftoff_plus_zd())
+        return math.atan2(self.desired_lateral_velocity, self.calculate_desired_liftoff_plus_zd())
 
     def calculate_time_required_btwn_lo_and_td(self):
         lift_off_height = math.cos(
-            self.calculate_lift_off_angle()) * self.hopper_leg_length
+            self.calculate_liftoff_angle()) * self.hopper_leg_length
         intial_vertical_speed = - \
             (2 * self.gravity * self.desired_height) ** (1. / 2.)
         final_vertical_speed = -intial_vertical_speed
         return (final_vertical_speed - intial_vertical_speed) / self.gravity
 
     def calculate_desired_acceleration(self):
-        current_position = -self.calculate_lift_off_angle()
+        current_position = -self.calculate_liftoff_angle()
         desired_position = 0
         t = self.calculate_time_required_btwn_lo_and_td() / 2.
         initial_alpha_d = 0
@@ -544,11 +631,6 @@ class Hopper2dController(VectorSystem):
         in_contact = foot_point_in_world[2] <= 0.01
         in_air = foot_point_in_world[2] >= 0.1
 
-        # It's all yours from here.
-        # Implement a controller that:
-        #  - Controls xd to self.desired_lateral_velocity
-        #  - Attempts to keep the body steady (theta = 0)
-
         torque = self.PD_controller(X, in_contact, in_air)
 
         return 0.0  # torque
@@ -619,10 +701,12 @@ class Hopper2dController(VectorSystem):
         l_rest = 1.0  # self.ChooseSpringRestLength(X = u)
 
         # Passive spring force
-        leg_compression_amount = l_rest - u[4]
+        # leg_compression_amount = l_rest - u[4]
 
-        y[:] = [self.ChooseThighTorque(X=u),
-                self.K_l * leg_compression_amount]
+        y[:] = self.controller(current_state=u)
+
+        # [self.ChooseThighTorque(X=u),
+        #         self.K_l * leg_compression_amount]
 
 
 '''
@@ -630,7 +714,11 @@ Builds the block diagram for the 2d hopper
 '''
 
 
-def build_block_diagram(desired_lateral_velocity=0.0, print_period=0.0):
+def build_block_diagram(
+        actuators_off=False,
+        desired_lateral_velocity=0.0,
+        desired_height=3.0,
+        print_period=0.0):
     builder = DiagramBuilder()
 
     # Build the plant
@@ -661,6 +749,8 @@ def build_block_diagram(desired_lateral_velocity=0.0, print_period=0.0):
     controller = builder.AddSystem(
         Hopper2dController(plant,
                            desired_lateral_velocity=desired_lateral_velocity,
+                           desired_height=desired_height,
+                           actuators_off=actuators_off,
                            print_period=print_period))
     builder.Connect(plant.get_state_output_port(),
                     controller.get_input_port(0))
@@ -694,11 +784,14 @@ progress, only if print_period is nonzero).
 
 
 def Simulate2dHopper(x0, duration,
+                     actuators_off=False,
                      desired_lateral_velocity=0.0,
+                     desired_height=0.0,
                      print_period=0.0):
 
     # The diagram, plant and contorller
-    diagram = build_block_diagram(desired_lateral_velocity, print_period)
+    diagram = build_block_diagram(
+        actuators_off, desired_lateral_velocity, desired_height, print_period)
 
     # Start visualizer recording
     visualizer = diagram.GetSubsystemByName('visualizer')
@@ -744,4 +837,5 @@ if __name__ == '__main__':
     hopper, controller, state_log = Simulate2dHopper(x0=x0,
                                                      duration=20,
                                                      desired_lateral_velocity=0.5,
+                                                     desired_height=3.0,
                                                      print_period=1.0)
