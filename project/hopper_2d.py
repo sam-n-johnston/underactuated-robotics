@@ -408,21 +408,20 @@ class Hopper2dController(VectorSystem):
         return self.get_beta(state[2], state[3])
 
     def PD_controller_thigh_torque(self, current_beta, current_betad, desired_beta, desired_betad):
-        Kp = -20.
-        Kv = -5.
+        Kp = -50.
+        Kv = -1.
 
         return Kp * (current_beta - desired_beta) + Kv * (current_betad - desired_betad)
 
-    # Should return an array with 2 items, one for torque of leg, one for l_rest
-    def controller(self, current_state):
-        if self.actuators_off:
-            l_rest = 1.0  # To Calculate
-            leg_compression_amount = l_rest - current_state[4]
-            l_force = self.K_l * leg_compression_amount
+    def calculate_thigh_torque(self, current_state):
+        if self.is_foot_in_contact(current_state) and self.current_desired_beta:
+            print('JUSTTOCHDOWN!')
+            current_beta = self.get_beta(current_state[2], current_state[3])
+            print(current_beta)
 
-            return [0.0, l_force]
-
-        desired_liftoff_angle = self.calculate_liftoff_angle()
+        if self.is_foot_in_contact(current_state):
+            self.current_desired_beta = None
+            return 0.0
 
         if self.current_desired_beta:
             current_beta = self.get_beta(current_state[2], current_state[3])
@@ -433,14 +432,18 @@ class Hopper2dController(VectorSystem):
 
             thigh_torque = self.PD_controller_thigh_torque(
                 current_beta, current_betad, desired_beta, desired_betad)
-            l_rest = 1.0  # To Calculate
-            leg_compression_amount = l_rest - current_state[4]
-            l_force = self.K_l * leg_compression_amount
 
-            return [thigh_torque, l_force]
+            return thigh_torque
+
+        desired_liftoff_angle = self.calculate_liftoff_angle()
+
+        print('desired_liftoff_angle')
+        print(desired_liftoff_angle)
 
         self.current_desired_beta = self.get_touchdown_beta_for_liftoff_beta(
             current_state, desired_liftoff_angle)
+
+        print(self.current_desired_beta)
 
         current_beta = self.get_beta(current_state[2], current_state[3])
         current_betad = self.get_beta(current_state[2+5], current_state[3+5])
@@ -449,6 +452,22 @@ class Hopper2dController(VectorSystem):
 
         thigh_torque = self.PD_controller_thigh_torque(
             current_beta, current_betad, desired_beta, desired_betad)
+
+        return thigh_torque
+
+    # Should return an array with 2 items, one for torque of leg, one for l_rest
+
+    def controller(self, current_state):
+        if self.actuators_off:
+            l_rest = 1.0  # To Calculate
+            leg_compression_amount = l_rest - current_state[4]
+            l_force = self.K_l * leg_compression_amount
+
+            return [0.0, l_force]
+
+        thigh_torque = self.calculate_thigh_torque(current_state)
+        print('controller: ' + str(thigh_torque) + '\t beta: ' + str(self.get_beta(
+            current_state[2], current_state[3])) + '\t beta_desired: ' + str(self.current_desired_beta))
         l_rest = 1.0  # To Calculate
         leg_compression_amount = l_rest - current_state[4]
         l_force = self.K_l * leg_compression_amount
@@ -790,7 +809,7 @@ progress, only if print_period is nonzero).
 def Simulate2dHopper(x0, duration,
                      actuators_off=False,
                      desired_lateral_velocity=0.0,
-                     desired_height=0.0,
+                     desired_height=3.0,
                      print_period=0.0):
 
     # The diagram, plant and contorller
