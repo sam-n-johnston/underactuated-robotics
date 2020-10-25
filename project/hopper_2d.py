@@ -231,7 +231,7 @@ class Hopper2dController(VectorSystem):
         # Run out the forward kinematics of the robot
         # to figure out where the body is in world frame.
         # body_point = np.array([0.0, 0.0, 0.0])
-        body_point = np.array([0.0, 0.0, self.body_size_height / 2.0])
+        body_point = np.array([0.0, 0.0, self.body_size_height])
         body_point_in_world = self.hopper.CalcPointsPositions(
             context,
             self.body_frame,
@@ -297,7 +297,6 @@ class Hopper2dController(VectorSystem):
                 (self.hopper_leg_length / 2.0) ** 2.0 + \
                 self.m_b * (leg_length) ** 2.0
 
-            # This means that this is too large
             rotational_acceleration = f_gravity_torque / moment_of_inertia
             acceleration_perpendicular_to_leg_frame = rotational_acceleration * leg_length
 
@@ -394,7 +393,6 @@ class Hopper2dController(VectorSystem):
 
     def get_touchdown_beta_for_liftoff_beta(self, flight_state, desired_liftoff_beta):
         # Controlled by setting touchdown beta
-        # TODO: Start here, create a test,
         # set the desired lo+ beta and see if the controller can find it, then test in simulation
         kp_beta = 0.1
 
