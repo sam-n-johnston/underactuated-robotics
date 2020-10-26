@@ -399,7 +399,7 @@ class Hopper2dController(VectorSystem):
         state = flight_state.copy()
         # Set state to current value
 
-        for i in range(10):
+        for i in range(25):
             liftoff_minus_state = self.get_liftoff_minus_state_based_on_flight_state(
                 state)
 
@@ -443,19 +443,19 @@ class Hopper2dController(VectorSystem):
 
             return self.PD_controller_thigh_torque_landed(current_state[2], current_state[2+5])
 
-        if current_state[1+5] > 4.0:
-            if not self.printed_lifted_off:
-                self.total_number_of_hops = self.total_number_of_hops + 1.0
+        # if current_state[1+5] < 4.0:
+        #     if not self.printed_lifted_off:
+        #         self.total_number_of_hops = self.total_number_of_hops + 1.0
 
-                self.printed_lifted_off = True
-                current_beta = self.get_beta(
-                    current_state[2], current_state[3])
-                print('liftoff_beta: \t\t\t\t' +
-                      str(current_beta))
+        #         self.printed_lifted_off = True
+        #         current_beta = self.get_beta(
+        #             current_state[2], current_state[3])
+        #         print('liftoff_beta: \t\t\t\t' +
+        #               str(current_beta))
 
-            return 0.0
+        #     return 0.0
 
-        self.printed_lifted_off = False
+        # self.printed_lifted_off = False
 
         if self.current_desired_touchdown_beta:
             current_beta = self.get_beta(current_state[2], current_state[3])
