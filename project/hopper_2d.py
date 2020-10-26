@@ -230,8 +230,25 @@ class Hopper2dController(VectorSystem):
         context.get_mutable_discrete_state_vector().SetFromVector(state)
         # Run out the forward kinematics of the robot
         # to figure out where the body is in world frame.
+        # This seems to be the correct place
+        body_point = np.array([0.0, 0.0, 0.0])
+        # body_point = np.array([0.0, 0.0, -self.body_size_height / 2.0])
+        body_point_in_world = self.hopper.CalcPointsPositions(
+            context,
+            self.body_frame,
+            body_point,
+            self.world_frame
+        )
+        return np.array([body_point_in_world[0, 0], body_point_in_world[2, 0]])
+
+    def get_body_position_center_of_mass(self, state):
+        context = self.hopper.CreateDefaultContext()
+        context.get_mutable_discrete_state_vector().SetFromVector(state)
+        # Run out the forward kinematics of the robot
+        # to figure out where the body is in world frame.
+        # This seems to be the correct place
         # body_point = np.array([0.0, 0.0, 0.0])
-        body_point = np.array([0.0, 0.0, self.body_size_height])
+        body_point = np.array([0.0, 0.0, -self.body_size_height])
         body_point_in_world = self.hopper.CalcPointsPositions(
             context,
             self.body_frame,
@@ -251,6 +268,9 @@ class Hopper2dController(VectorSystem):
         distance = math.sqrt(x_diff ** 2.0 + z_diff ** 2.0)
         return distance
 
+    # TODO: This function is not working as expected. Add more tests 1-by-1 and try to figure out
+    # What's not working correctly.
+    # I already fixed l and body position (which fixed beta)
     def get_liftoff_minus_state_based_on_touchdown_plus_state(self, touchdown_plus_state):
         timestep = 0.0005
         current_time = 0.0
@@ -262,6 +282,13 @@ class Hopper2dController(VectorSystem):
         f_gravity_foot = self.m_f * self.gravity
         body_position = self.get_body_position_from(current_state)
         beta = self.get_beta_from(foot_position, body_position)
+
+        touchdown_time = 0.645
+        # print('TESTING=========================================================')
+        # print(current_state)
+        # print('body: ' + str(body_position))
+        # print('beta: ' + str(beta))
+
         previous_velocity_along_leg_frame = current_state[0+5] * math.sin(
             beta) + current_state[1+5] * math.cos(beta)
         previous_velocity_perpendicular_to_leg_frame = current_state[0+5] * math.cos(
@@ -322,17 +349,18 @@ class Hopper2dController(VectorSystem):
             current_state[1] = current_state[1] + current_state[1+5] * timestep
 
             # Set alpha - theta is usually constant
+            # current_state[2] = current_state[2] + current_state[2+5] * timestep
+
             new_alpha = beta - current_state[2]
             current_state[3] = new_alpha
 
             body_position = self.get_body_position_from(current_state)
             leg_length = self.get_leg_length(foot_position, body_position)
 
-            current_state[4] = leg_length - self.hopper_leg_length / \
-                2.0 - self.body_size_height / 2.0
+            current_state[4] = leg_length - self.hopper_leg_length / 2.0
 
             # Add small l buffer
-            l_buffer = 0.013
+            l_buffer = 0.0
             if current_state[4] > self.l_max + l_buffer:
                 current_state[4] = self.l_max + l_buffer
 
@@ -341,6 +369,12 @@ class Hopper2dController(VectorSystem):
 
             current_time = current_time + timestep\
 
+            # print('{:.{}f}'.format(current_time + touchdown_time, 5) +
+            #       '\t x: ' + '{:.{}f}'.format(current_state[0], 5) +
+            #       '\t l: ' + '{:.{}f}'.format(current_state[4], 5)
+            #       )
+            # print(leg_length)
+            # print(current_state)
             if not self.is_foot_in_contact(current_state):
                 found_liftoff_minus_state = True
 
@@ -352,6 +386,9 @@ class Hopper2dController(VectorSystem):
     def get_liftoff_minus_state_based_on_flight_state(self, flight_phase):
         touchdown_minus_state = self.get_touchdown_minus_state_based_on_flight_state(
             flight_phase)
+
+        # print('touchdown_minus_state')
+        # print(touchdown_minus_state)
 
         liftoff_minus = self.get_liftoff_minus_state_based_on_touchdown_plus_state(
             touchdown_minus_state
@@ -443,19 +480,19 @@ class Hopper2dController(VectorSystem):
 
             return self.PD_controller_thigh_torque_landed(current_state[2], current_state[2+5])
 
-        # if current_state[1+5] < 4.0:
-        #     if not self.printed_lifted_off:
-        #         self.total_number_of_hops = self.total_number_of_hops + 1.0
+        if current_state[1] < 1.75 and current_state[1+5] > 0.0:
+            if not self.printed_lifted_off:
+                self.total_number_of_hops = self.total_number_of_hops + 1.0
 
-        #         self.printed_lifted_off = True
-        #         current_beta = self.get_beta(
-        #             current_state[2], current_state[3])
-        #         print('liftoff_beta: \t\t\t\t' +
-        #               str(current_beta))
+                self.printed_lifted_off = True
+                current_beta = self.get_beta(
+                    current_state[2], current_state[3])
+                print('liftoff_beta: \t\t\t\t' +
+                      str(current_beta))
 
-        #     return 0.0
+            return 0.0
 
-        # self.printed_lifted_off = False
+        self.printed_lifted_off = False
 
         if self.current_desired_touchdown_beta:
             current_beta = self.get_beta(current_state[2], current_state[3])
@@ -589,6 +626,8 @@ class Hopper2dController(VectorSystem):
     def is_foot_in_contact(self, state):
         foot_point_in_world = self.get_leg_tip_position_from(state)
         is_not_in_contact = foot_point_in_world[1] > 0.01 and state[4] >= 0.5
+        # print('foot point: ' +
+        #       str(foot_point_in_world[1]) + '\t l: ' + str(state[4]) + '\t\t => ' + str(not is_not_in_contact))
 
         return not is_not_in_contact
 
