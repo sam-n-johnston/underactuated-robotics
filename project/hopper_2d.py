@@ -347,12 +347,6 @@ class Hopper2dController(VectorSystem):
             current_state[0] = current_state[0] + current_state[0+5] * timestep
             current_state[1] = current_state[1] + current_state[1+5] * timestep
 
-            # Set alpha - theta is usually constant
-            # current_state[2] = current_state[2] + current_state[2+5] * timestep
-
-            new_alpha = beta - current_state[2]
-            current_state[3] = new_alpha
-
             body_position = self.get_body_position_from(current_state)
             leg_length = self.get_leg_length(foot_position, body_position)
 
@@ -365,6 +359,11 @@ class Hopper2dController(VectorSystem):
 
             # Get beta based on
             beta = self.get_beta_from(foot_position, body_position)
+
+            # Set alpha - theta is usually constant
+            # current_state[2] = current_state[2] + current_state[2+5] * timestep
+            new_alpha = beta - current_state[2]
+            current_state[3] = new_alpha
 
             current_time = current_time + timestep\
 
