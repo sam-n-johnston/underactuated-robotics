@@ -284,8 +284,6 @@ class Hopper2dController(VectorSystem):
         state_logs = state_logs[:, np.newaxis]
 
         touchdown_time = 0.645
-        # print('TESTING=========================================================')
-        # print(current_state)
         # print('body: ' + str(body_position))
         # print('beta: ' + str(beta))
 
@@ -340,8 +338,9 @@ class Hopper2dController(VectorSystem):
             current_state[0+5] = new_velocity_along_leg_frame * \
                 math.sin(beta) + \
                 new_velocity_perpendicular_to_leg_frame * math.cos(beta)
+            # On the first step, this drastically reduces and causes disprepancies.
             current_state[1+5] = new_velocity_along_leg_frame * \
-                math.cos(beta) + \
+                math.cos(beta) - \
                 new_velocity_perpendicular_to_leg_frame * math.sin(beta)
 
             # Set new positions
@@ -537,7 +536,7 @@ class Hopper2dController(VectorSystem):
         if self.actuators_off:
             l_rest = 1.0  # To Calculate
             leg_compression_amount = l_rest - current_state[4]
-            l_force = self.K_l * leg_compression_amount
+            l_force = self.spring_force(leg_compression_amount)
 
             return [0.0, l_force]
 
