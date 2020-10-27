@@ -280,10 +280,8 @@ class Hopper2dController(VectorSystem):
         body_position = self.get_body_position_from(current_state)
         beta = self.get_beta_from(foot_position, body_position)
 
-        print('testing...')
         state_logs = np.copy(current_state)
         state_logs = state_logs[:, np.newaxis]
-        print(np.shape(state_logs))
 
         touchdown_time = 0.645
         # print('TESTING=========================================================')
@@ -386,9 +384,6 @@ class Hopper2dController(VectorSystem):
 
         if not found_liftoff_minus_state:
             raise Exception('The robot never left the ground')
-
-        print('state_logs')
-        print(np.shape(state_logs))
 
         return current_state, state_logs
 
