@@ -3,6 +3,7 @@ import math
 import numpy as np
 import inspect
 from hopper_2d import Simulate2dHopper
+import matplotlib.pyplot as plt
 
 
 class TestTakeOffPlus(unittest.TestCase):
@@ -501,65 +502,65 @@ class TestTakeOffPlus(unittest.TestCase):
     #             0
     #         )
 
-    def test_touchdown_minus_state(self):
-        apex_state = np.zeros(10)
-        apex_state[1] = 3.5  # height
-        apex_state[4] = 0.5  # l distance
+    # def test_touchdown_minus_state(self):
+    #     apex_state = np.zeros(10)
+    #     apex_state[1] = 3.5  # height
+    #     apex_state[4] = 0.5  # l distance
 
-        self.touchdown_minus_state_based_on_flight_state(apex_state)
+    #     self.touchdown_minus_state_based_on_flight_state(apex_state)
 
-    def test_touchdown_minus_state_with_zd(self):
-        apex_state = np.zeros(10)
-        apex_state[1] = 3.5  # height
-        apex_state[4] = 0.5  # l distance
-        apex_state[1+5] = 0.5  # zd
+    # def test_touchdown_minus_state_with_zd(self):
+    #     apex_state = np.zeros(10)
+    #     apex_state[1] = 3.5  # height
+    #     apex_state[4] = 0.5  # l distance
+    #     apex_state[1+5] = 0.5  # zd
 
-        self.touchdown_minus_state_based_on_flight_state(apex_state)
+    #     self.touchdown_minus_state_based_on_flight_state(apex_state)
 
-    def test_touchdown_minus_state_with_xd(self):
-        apex_state = np.zeros(10)
-        apex_state[1] = 3.5  # height
-        apex_state[4] = 0.5  # l distance
-        apex_state[1+5] = 0.5  # zd
-        apex_state[0+5] = 0.5  # xd
+    # def test_touchdown_minus_state_with_xd(self):
+    #     apex_state = np.zeros(10)
+    #     apex_state[1] = 3.5  # height
+    #     apex_state[4] = 0.5  # l distance
+    #     apex_state[1+5] = 0.5  # zd
+    #     apex_state[0+5] = 0.5  # xd
 
-        self.touchdown_minus_state_based_on_flight_state(apex_state)
+    #     self.touchdown_minus_state_based_on_flight_state(apex_state)
 
-    def test_touchdown_minus_state_with_theta(self):
-        apex_state = np.zeros(10)
-        apex_state[1] = 3.5  # height
-        apex_state[2] = 0.1  # theta
-        apex_state[4] = 0.5  # l distance
+    # def test_touchdown_minus_state_with_theta(self):
+    #     apex_state = np.zeros(10)
+    #     apex_state[1] = 3.5  # height
+    #     apex_state[2] = 0.1  # theta
+    #     apex_state[4] = 0.5  # l distance
 
-        self.touchdown_minus_state_based_on_flight_state(apex_state)
+    #     self.touchdown_minus_state_based_on_flight_state(apex_state)
 
-    def test_touchdown_minus_state_with_alpha(self):
-        apex_state = np.zeros(10)
-        apex_state[1] = 3.5  # height
-        apex_state[2] = 0.1  # theta
-        apex_state[3] = -0.2  # alpha
-        apex_state[4] = 0.5  # l distance
+    # def test_touchdown_minus_state_with_alpha(self):
+    #     apex_state = np.zeros(10)
+    #     apex_state[1] = 3.5  # height
+    #     apex_state[2] = 0.1  # theta
+    #     apex_state[3] = -0.2  # alpha
+    #     apex_state[4] = 0.5  # l distance
 
-        self.touchdown_minus_state_based_on_flight_state(apex_state)
+    #     self.touchdown_minus_state_based_on_flight_state(apex_state)
 
-    def test_touchdown_minus_state_with_strong_alpha(self):
-        apex_state = np.zeros(10)
-        apex_state[1] = 3.5  # height
-        apex_state[3] = 0.4  # alpha
-        apex_state[4] = 0.5  # l distance
+    # def test_touchdown_minus_state_with_strong_alpha(self):
+    #     apex_state = np.zeros(10)
+    #     apex_state[1] = 3.5  # height
+    #     apex_state[3] = 0.4  # alpha
+    #     apex_state[4] = 0.5  # l distance
 
-        self.touchdown_minus_state_based_on_flight_state(apex_state)
+    #     self.touchdown_minus_state_based_on_flight_state(apex_state)
 
-    def test_touchdown_minus_state_with_all(self):
-        apex_state = np.zeros(10)
-        apex_state[1] = 3.5  # height
-        apex_state[2] = 0.1  # theta
-        apex_state[3] = 0.4  # alpha
-        apex_state[4] = 0.5  # l distance
-        apex_state[0+5] = 0.15  # xd
-        apex_state[1+5] = 0.25  # zd
+    # def test_touchdown_minus_state_with_all(self):
+    #     apex_state = np.zeros(10)
+    #     apex_state[1] = 3.5  # height
+    #     apex_state[2] = 0.1  # theta
+    #     apex_state[3] = 0.4  # alpha
+    #     apex_state[4] = 0.5  # l distance
+    #     apex_state[0+5] = 0.15  # xd
+    #     apex_state[1+5] = 0.25  # zd
 
-        self.touchdown_minus_state_based_on_flight_state(apex_state)
+    #     self.touchdown_minus_state_based_on_flight_state(apex_state)
 
     def touchdown_minus_state_based_on_flight_state(self, flight_state):
         # Use Simulate2dHopper to simulate
@@ -817,39 +818,14 @@ class TestTakeOffPlus(unittest.TestCase):
     #     self.assertAlmostEqual(
     #         calculated_beta, simulated_beta, 1)
 
-    def test_liftoff_minus_state_0(self):
-        apex_state = np.zeros(10)
-        apex_state[1] = 3.5  # height
-        apex_state[4] = 0.5  # l distance
+    # def test_liftoff_minus_state_0(self):
+    #     apex_state = np.zeros(10)
+    #     apex_state[1] = 3.5  # height
+    #     apex_state[4] = 0.5  # l distance
 
-        self.liftoff_minus_state(apex_state)
+    #     self.liftoff_minus_state(apex_state)
 
     def test_liftoff_minus_state_1(self):
-        apex_state = np.zeros(10)
-        apex_state[1] = 3.5  # height
-        apex_state[2] = -0.1  # theta
-        apex_state[4] = 0.5  # l distance
-
-        self.liftoff_minus_state(apex_state)
-
-    def test_liftoff_minus_state_2(self):
-        apex_state = np.zeros(10)
-        apex_state[1] = 3.5  # height
-        apex_state[3] = -0.1  # alpha
-        apex_state[4] = 0.5  # l distance
-
-        self.liftoff_minus_state(apex_state)
-
-    def test_liftoff_minus_state_3(self):
-        apex_state = np.zeros(10)
-        apex_state[1] = 3.5  # height
-        apex_state[2] = -0.05  # theta
-        apex_state[3] = -0.05  # alpha
-        apex_state[4] = 0.5  # l distance
-
-        self.liftoff_minus_state(apex_state)
-
-    def test_liftoff_minus_state_4(self):
         apex_state = np.zeros(10)
         apex_state[1] = 3.5  # height
         apex_state[2] = -0.2  # theta
@@ -857,22 +833,47 @@ class TestTakeOffPlus(unittest.TestCase):
 
         self.liftoff_minus_state(apex_state)
 
-    def test_liftoff_minus_state_5(self):
-        apex_state = np.zeros(10)
-        apex_state[1] = 3.5  # height
-        apex_state[3] = -0.2  # alpha
-        apex_state[4] = 0.5  # l distance
+    # def test_liftoff_minus_state_2(self):
+    #     apex_state = np.zeros(10)
+    #     apex_state[1] = 3.5  # height
+    #     apex_state[3] = -0.1  # alpha
+    #     apex_state[4] = 0.5  # l distance
 
-        self.liftoff_minus_state(apex_state)
+    #     self.liftoff_minus_state(apex_state)
 
-    def test_liftoff_minus_state_6(self):
-        apex_state = np.zeros(10)
-        apex_state[1] = 3.5  # height
-        apex_state[2] = -0.1  # theta
-        apex_state[3] = -0.1  # alpha
-        apex_state[4] = 0.5  # l distance
+    # def test_liftoff_minus_state_3(self):
+    #     apex_state = np.zeros(10)
+    #     apex_state[1] = 3.5  # height
+    #     apex_state[2] = -0.05  # theta
+    #     apex_state[3] = -0.05  # alpha
+    #     apex_state[4] = 0.5  # l distance
 
-        self.liftoff_minus_state(apex_state)
+    #     self.liftoff_minus_state(apex_state)
+
+    # def test_liftoff_minus_state_4(self):
+    #     apex_state = np.zeros(10)
+    #     apex_state[1] = 3.5  # height
+    #     apex_state[2] = -0.2  # theta
+    #     apex_state[4] = 0.5  # l distance
+
+    #     self.liftoff_minus_state(apex_state)
+
+    # def test_liftoff_minus_state_5(self):
+    #     apex_state = np.zeros(10)
+    #     apex_state[1] = 3.5  # height
+    #     apex_state[3] = -0.2  # alpha
+    #     apex_state[4] = 0.5  # l distance
+
+    #     self.liftoff_minus_state(apex_state)
+
+    # def test_liftoff_minus_state_6(self):
+    #     apex_state = np.zeros(10)
+    #     apex_state[1] = 3.5  # height
+    #     apex_state[2] = -0.1  # theta
+    #     apex_state[3] = -0.1  # alpha
+    #     apex_state[4] = 0.5  # l distance
+
+    #     self.liftoff_minus_state(apex_state)
 
     # def test_liftoff_minus_state_5(self):
     #     apex_state = np.zeros(10)
@@ -898,8 +899,15 @@ class TestTakeOffPlus(unittest.TestCase):
         )[:, simulated_state_index_at_liftoff_minus]
 
         # Get calcualted touchdown minus state
-        calculated_state_at_liftoff_minus = controller.get_liftoff_minus_state_based_on_flight_state(
+        calculated_state_at_liftoff_minus, state_logs = controller.get_liftoff_minus_state_based_on_flight_state(
             apex_state)
+
+        extra_left_padding = np.shape(state_log.data())[
+            1] - np.shape(state_logs)[1]
+        new_state_logs = np.pad(state_logs, ((0, 0), (extra_left_padding, 0)))
+
+        self.log_state_log(state_log.sample_times(), state_log.data())
+        self.log_state_log(state_log.sample_times(), new_state_logs)
 
         print('\nsimulated_state_at_liftoff_minus')
         print(simulated_state_at_liftoff_minus)
@@ -1024,6 +1032,47 @@ class TestTakeOffPlus(unittest.TestCase):
     #         1,
     #         'Liftoff l'
     #     )
+
+    def log_state_log(self, sample_times, state_log):
+
+        # Plot traces of certain states
+        plt.figure().set_size_inches(10, 5)
+        plt.plot(sample_times, state_log[0, :])
+        plt.plot(sample_times, state_log[0+5, :])
+        plt.grid(True)
+        plt.legend(["body_x", "body_x_d"])
+
+        plt.figure().set_size_inches(10, 5)
+        plt.plot(sample_times, state_log[1, :])
+        plt.plot(sample_times, state_log[1+5, :])
+        plt.grid(True)
+        plt.legend(["body_z", "body_z_d"])
+
+        plt.figure().set_size_inches(10, 5)
+        plt.plot(sample_times, state_log[2, :])
+        plt.plot(sample_times, state_log[2+5, :])
+        plt.legend(["body_theta", "body_theta_d"])
+        plt.grid(True)
+
+        plt.figure().set_size_inches(10, 5)
+        plt.plot(sample_times, state_log[3, :])
+        plt.plot(sample_times, state_log[3+5, :])
+        plt.legend(["alpha", "alpha_d"])
+        plt.grid(True)
+
+        plt.figure().set_size_inches(10, 5)
+        plt.plot(sample_times, np.add(state_log[2, :], state_log[3, :]))
+        plt.plot(sample_times, np.add(state_log[2+5, :], state_log[3+5, :]))
+        plt.legend(["beta", "beta_d"])
+        plt.grid(True)
+
+        plt.figure().set_size_inches(10, 5)
+        plt.plot(sample_times, state_log[4, :])
+        plt.plot(sample_times, state_log[4+5, :])
+        plt.legend(["leg_extension", "leg_extension_d"])
+        plt.ylim([-1.0, 1.0])
+        plt.grid(True)
+        plt.show()
 
     def apex_z_and_xd_based_off_liftoff_plus(self, lift_off_plus_state):
         # Use Simulate2dHopper to simulate
@@ -1153,4 +1202,8 @@ class TestTakeOffPlus(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    unittest.main(verbosity=2)
+
+
+def run():
     unittest.main(verbosity=2)

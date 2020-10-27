@@ -268,9 +268,6 @@ class Hopper2dController(VectorSystem):
         distance = math.sqrt(x_diff ** 2.0 + z_diff ** 2.0)
         return distance
 
-    # TODO: This function is not working as expected. Add more tests 1-by-1 and try to figure out
-    # What's not working correctly.
-    # I already fixed l and body position (which fixed beta)
     def get_liftoff_minus_state_based_on_touchdown_plus_state(self, touchdown_plus_state):
         timestep = 0.0005
         current_time = 0.0
@@ -282,6 +279,11 @@ class Hopper2dController(VectorSystem):
         f_gravity_foot = self.m_f * self.gravity
         body_position = self.get_body_position_from(current_state)
         beta = self.get_beta_from(foot_position, body_position)
+
+        print('testing...')
+        state_logs = np.copy(current_state)
+        state_logs = state_logs[:, np.newaxis]
+        print(np.shape(state_logs))
 
         touchdown_time = 0.645
         # print('TESTING=========================================================')
@@ -375,13 +377,20 @@ class Hopper2dController(VectorSystem):
             #       )
             # print(leg_length)
             # print(current_state)
+
+            state_logs = np.append(
+                state_logs, current_state[:, np.newaxis], axis=1)
+
             if not self.is_foot_in_contact(current_state):
                 found_liftoff_minus_state = True
 
         if not found_liftoff_minus_state:
             raise Exception('The robot never left the ground')
 
-        return current_state
+        print('state_logs')
+        print(np.shape(state_logs))
+
+        return current_state, state_logs
 
     def get_liftoff_minus_state_based_on_flight_state(self, flight_phase):
         touchdown_minus_state = self.get_touchdown_minus_state_based_on_flight_state(
@@ -390,11 +399,11 @@ class Hopper2dController(VectorSystem):
         # print('touchdown_minus_state')
         # print(touchdown_minus_state)
 
-        liftoff_minus = self.get_liftoff_minus_state_based_on_touchdown_plus_state(
+        liftoff_minus, state_logs = self.get_liftoff_minus_state_based_on_touchdown_plus_state(
             touchdown_minus_state
         )
 
-        return liftoff_minus
+        return liftoff_minus, state_logs
 
     def calculate_energy_loss_by_touch_down(self, flight_phase):
         touchdown_minus_state = self.get_touchdown_minus_state_based_on_flight_state(
