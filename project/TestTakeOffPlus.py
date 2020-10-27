@@ -906,8 +906,11 @@ class TestTakeOffPlus(unittest.TestCase):
             1] - np.shape(state_logs)[1]
         new_state_logs = np.pad(state_logs, ((0, 0), (extra_left_padding, 0)))
 
-        self.log_state_log(state_log.sample_times(), state_log.data())
-        self.log_state_log(state_log.sample_times(), new_state_logs)
+        self.log_state_log(
+            state_log.sample_times(),
+            state_log.data(),
+            new_state_logs
+        )
 
         print('\nsimulated_state_at_liftoff_minus')
         print(simulated_state_at_liftoff_minus)
@@ -1033,45 +1036,43 @@ class TestTakeOffPlus(unittest.TestCase):
     #         'Liftoff l'
     #     )
 
-    def log_state_log(self, sample_times, state_log):
+    def log_state_log(
+        self,
+        simulated_sample_times,
+        simulated_state_log,
+        calculated_state_log
+    ):
 
-        # Plot traces of certain states
-        plt.figure().set_size_inches(10, 5)
-        plt.plot(sample_times, state_log[0, :])
-        plt.plot(sample_times, state_log[0+5, :])
-        plt.grid(True)
-        plt.legend(["body_x", "body_x_d"])
+        def log_single_state(index, name):
+            plt.figure().set_size_inches(10, 5)
+            plt.plot(simulated_sample_times, simulated_state_log[index, :])
+            plt.plot(simulated_sample_times, simulated_state_log[index+5, :])
+            plt.plot(simulated_sample_times, calculated_state_log[index, :])
+            plt.plot(simulated_sample_times, calculated_state_log[index+5, :])
+            plt.grid(True)
+            plt.legend(["simulated_" + name, "simulated_" + name + "_d",
+                        "calculated_" + name, "calculated_" + name + "_d"])
 
-        plt.figure().set_size_inches(10, 5)
-        plt.plot(sample_times, state_log[1, :])
-        plt.plot(sample_times, state_log[1+5, :])
-        plt.grid(True)
-        plt.legend(["body_z", "body_z_d"])
-
-        plt.figure().set_size_inches(10, 5)
-        plt.plot(sample_times, state_log[2, :])
-        plt.plot(sample_times, state_log[2+5, :])
-        plt.legend(["body_theta", "body_theta_d"])
-        plt.grid(True)
-
-        plt.figure().set_size_inches(10, 5)
-        plt.plot(sample_times, state_log[3, :])
-        plt.plot(sample_times, state_log[3+5, :])
-        plt.legend(["alpha", "alpha_d"])
-        plt.grid(True)
+        log_single_state(0, 'body_x')
+        log_single_state(1, 'body_z')
+        log_single_state(2, 'body_theta')
+        log_single_state(3, 'alpha')
 
         plt.figure().set_size_inches(10, 5)
-        plt.plot(sample_times, np.add(state_log[2, :], state_log[3, :]))
-        plt.plot(sample_times, np.add(state_log[2+5, :], state_log[3+5, :]))
-        plt.legend(["beta", "beta_d"])
+        plt.plot(simulated_sample_times, np.add(
+            simulated_state_log[2, :], simulated_state_log[3, :]))
+        plt.plot(simulated_sample_times, np.add(
+            simulated_state_log[2+5, :], simulated_state_log[3+5, :]))
+        plt.plot(simulated_sample_times, np.add(
+            calculated_state_log[0+5, :], calculated_state_log[0+5, :]))
+        plt.plot(simulated_sample_times, np.add(
+            calculated_state_log[2+5, :], calculated_state_log[3+5, :]))
+        plt.legend(["simulated_beta", "simulated_beta_d",
+                    "calculated_beta", "calculated_beta_d"])
         plt.grid(True)
 
-        plt.figure().set_size_inches(10, 5)
-        plt.plot(sample_times, state_log[4, :])
-        plt.plot(sample_times, state_log[4+5, :])
-        plt.legend(["leg_extension", "leg_extension_d"])
-        plt.ylim([-1.0, 1.0])
-        plt.grid(True)
+        log_single_state(4, 'leg_extension')
+
         plt.show()
 
     def apex_z_and_xd_based_off_liftoff_plus(self, lift_off_plus_state):
