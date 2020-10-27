@@ -899,17 +899,25 @@ class TestTakeOffPlus(unittest.TestCase):
         )[:, simulated_state_index_at_liftoff_minus]
 
         # Get calcualted touchdown minus state
-        calculated_state_at_liftoff_minus, state_logs = controller.get_liftoff_minus_state_based_on_flight_state(
+        calculated_state_at_liftoff_minus, calculated_state_logs = controller.get_liftoff_minus_state_based_on_flight_state(
             apex_state)
 
-        extra_left_padding = np.shape(state_log.data())[
-            1] - np.shape(state_logs)[1]
-        new_state_logs = np.pad(state_logs, ((0, 0), (extra_left_padding, 0)))
+        simulated_state_logs = np.copy(state_log.data())
+        simulated_state_logs = simulated_state_logs[:,
+                                                    0:simulated_state_index_at_liftoff_minus]
+
+        sample_times = state_log.sample_times(
+        )[0:simulated_state_index_at_liftoff_minus]
+
+        extra_left_padding = np.shape(simulated_state_logs)[
+            1] - np.shape(calculated_state_logs)[1]
+        calculated_state_logs = np.pad(
+            calculated_state_logs, ((0, 0), (extra_left_padding, 0)))
 
         self.log_state_log(
-            state_log.sample_times(),
-            state_log.data(),
-            new_state_logs
+            sample_times,
+            simulated_state_logs,
+            calculated_state_logs
         )
 
         print('\nsimulated_state_at_liftoff_minus')
