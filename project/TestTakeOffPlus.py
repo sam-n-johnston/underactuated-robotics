@@ -843,6 +843,31 @@ class TestTakeOffPlus(unittest.TestCase):
     def test_liftoff_minus_state_3(self):
         apex_state = np.zeros(10)
         apex_state[1] = 3.5  # height
+        apex_state[2] = -0.05  # theta
+        apex_state[3] = -0.05  # alpha
+        apex_state[4] = 0.5  # l distance
+
+        self.liftoff_minus_state(apex_state)
+
+    def test_liftoff_minus_state_4(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[2] = -0.2  # theta
+        apex_state[4] = 0.5  # l distance
+
+        self.liftoff_minus_state(apex_state)
+
+    def test_liftoff_minus_state_5(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[3] = -0.2  # alpha
+        apex_state[4] = 0.5  # l distance
+
+        self.liftoff_minus_state(apex_state)
+
+    def test_liftoff_minus_state_6(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
         apex_state[2] = -0.1  # theta
         apex_state[3] = -0.1  # alpha
         apex_state[4] = 0.5  # l distance
