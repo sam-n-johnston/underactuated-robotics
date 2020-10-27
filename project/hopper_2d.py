@@ -441,7 +441,7 @@ class Hopper2dController(VectorSystem):
         # Set state to current value
 
         for i in range(25):
-            liftoff_minus_state = self.get_liftoff_minus_state_based_on_flight_state(
+            liftoff_minus_state, _ = self.get_liftoff_minus_state_based_on_flight_state(
                 state)
 
             current_liftoff_beta = self.get_beta(

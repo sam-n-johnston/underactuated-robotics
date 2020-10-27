@@ -828,7 +828,7 @@ class TestTakeOffPlus(unittest.TestCase):
     def test_liftoff_minus_state_1(self):
         apex_state = np.zeros(10)
         apex_state[1] = 3.5  # height
-        apex_state[2] = -0.2  # theta
+        apex_state[2] = -0.15  # theta
         apex_state[4] = 0.5  # l distance
 
         self.liftoff_minus_state(apex_state)
@@ -898,6 +898,9 @@ class TestTakeOffPlus(unittest.TestCase):
         simulated_state_at_liftoff_minus = state_log.data(
         )[:, simulated_state_index_at_liftoff_minus]
 
+        simulated_state_index_at_touchdown_plus = self.find_simulated_state_index_at_touchdown_plus(
+            state_log, controller)
+
         # Get calcualted touchdown minus state
         calculated_state_at_liftoff_minus, calculated_state_logs = controller.get_liftoff_minus_state_based_on_flight_state(
             apex_state)
@@ -909,10 +912,12 @@ class TestTakeOffPlus(unittest.TestCase):
         sample_times = state_log.sample_times(
         )[0:simulated_state_index_at_liftoff_minus]
 
-        extra_left_padding = np.shape(simulated_state_logs)[
-            1] - np.shape(calculated_state_logs)[1]
+        extra_left_padding = simulated_state_index_at_touchdown_plus
+        extra_right_padding = simulated_state_index_at_liftoff_minus - \
+            extra_left_padding - np.shape(calculated_state_logs)[1]
+
         calculated_state_logs = np.pad(
-            calculated_state_logs, ((0, 0), (extra_left_padding, 0)))
+            calculated_state_logs, ((0, 0), (extra_left_padding, extra_right_padding)))
 
         self.log_state_log(
             sample_times,
