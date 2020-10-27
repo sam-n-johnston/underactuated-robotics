@@ -52,3 +52,5 @@ To start the project, run:
 docker build ./project --tag drake_and_tools
 docker run -it -p 8080:8080 -v "$(pwd)/project"":"/notebooks --name underactuated_robotics_project drake_and_tools
 ```
+
+To run the tests, go in the docker container and run `python3 ./TestTakeOffPlus.py`. You can also open the jupyter notebook `unit_tests` and run them from there to get some information in plots about the tests.
