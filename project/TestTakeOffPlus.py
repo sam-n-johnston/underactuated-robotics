@@ -501,79 +501,90 @@ class TestTakeOffPlus(unittest.TestCase):
     #             0
     #         )
 
-    # def test_touchdown_minus_state(self):
-    #     apex_state = np.zeros(10)
-    #     apex_state[1] = 3.5  # height
-    #     apex_state[4] = 0.5  # l distance
+    def test_touchdown_minus_state(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[4] = 0.5  # l distance
 
-    #     self.touchdown_minus_state_based_on_flight_state(apex_state)
+        self.touchdown_minus_state_based_on_flight_state(apex_state)
 
-    # def test_touchdown_minus_state_with_zd(self):
-    #     apex_state = np.zeros(10)
-    #     apex_state[1] = 3.5  # height
-    #     apex_state[4] = 0.5  # l distance
-    #     apex_state[1+5] = 0.5  # zd
+    def test_touchdown_minus_state_with_zd(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[4] = 0.5  # l distance
+        apex_state[1+5] = 0.5  # zd
 
-    #     self.touchdown_minus_state_based_on_flight_state(apex_state)
+        self.touchdown_minus_state_based_on_flight_state(apex_state)
 
-    # def test_touchdown_minus_state_with_xd(self):
-    #     apex_state = np.zeros(10)
-    #     apex_state[1] = 3.5  # height
-    #     apex_state[4] = 0.5  # l distance
-    #     apex_state[1+5] = 0.5  # zd
-    #     apex_state[0+5] = 0.5  # xd
+    def test_touchdown_minus_state_with_xd(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[4] = 0.5  # l distance
+        apex_state[1+5] = 0.5  # zd
+        apex_state[0+5] = 0.5  # xd
 
-    #     self.touchdown_minus_state_based_on_flight_state(apex_state)
+        self.touchdown_minus_state_based_on_flight_state(apex_state)
 
-    # def test_touchdown_minus_state_with_theta(self):
-    #     apex_state = np.zeros(10)
-    #     apex_state[1] = 3.5  # height
-    #     apex_state[2] = 0.1  # theta
-    #     apex_state[4] = 0.5  # l distance
+    def test_touchdown_minus_state_with_theta(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[2] = 0.1  # theta
+        apex_state[4] = 0.5  # l distance
 
-    #     self.touchdown_minus_state_based_on_flight_state(apex_state)
+        self.touchdown_minus_state_based_on_flight_state(apex_state)
 
-    # def test_touchdown_minus_state_with_alpha(self):
-    #     apex_state = np.zeros(10)
-    #     apex_state[1] = 3.5  # height
-    #     apex_state[2] = 0.1  # theta
-    #     apex_state[3] = -0.2  # alpha
-    #     apex_state[4] = 0.5  # l distance
+    def test_touchdown_minus_state_with_alpha(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[2] = 0.1  # theta
+        apex_state[3] = -0.2  # alpha
+        apex_state[4] = 0.5  # l distance
 
-    #     self.touchdown_minus_state_based_on_flight_state(apex_state)
+        self.touchdown_minus_state_based_on_flight_state(apex_state)
 
-    # def test_touchdown_minus_state_with_strong_alpha(self):
-    #     apex_state = np.zeros(10)
-    #     apex_state[1] = 3.5  # height
-    #     apex_state[3] = 0.4  # alpha
-    #     apex_state[4] = 0.5  # l distance
+    def test_touchdown_minus_state_with_strong_alpha(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[3] = 0.4  # alpha
+        apex_state[4] = 0.5  # l distance
 
-    #     self.touchdown_minus_state_based_on_flight_state(apex_state)
+        self.touchdown_minus_state_based_on_flight_state(apex_state)
 
-    # def touchdown_minus_state_based_on_flight_state(self, flight_state):
-    #     # Use Simulate2dHopper to simulate
-    #     hopper, controller, state_log, animation = Simulate2dHopper(x0=flight_state,
-    #                                                                 duration=2,
-    #                                                                 actuators_off=True)
+    def test_touchdown_minus_state_with_all(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[2] = 0.1  # theta
+        apex_state[3] = 0.4  # alpha
+        apex_state[4] = 0.5  # l distance
+        apex_state[0+5] = 0.15  # xd
+        apex_state[1+5] = 0.25  # zd
 
-    #     # Get simulated touchdown minus state
-    #     simulated_state_index_at_touchdown_minus = self.find_simulated_state_index_at_touchdown_minus(
-    #         state_log, controller)
-    #     simulated_state_at_touchdown_minus = state_log.data(
-    #     )[:, simulated_state_index_at_touchdown_minus]
+        self.touchdown_minus_state_based_on_flight_state(apex_state)
 
-    #     # Get calcualted touchdown minus state
-    #     calculated_state_index_at_touchdown_minus = controller.get_touchdown_minus_state_based_on_flight_state(
-    #         flight_state)
+    def touchdown_minus_state_based_on_flight_state(self, flight_state):
+        # Use Simulate2dHopper to simulate
+        hopper, controller, state_log, animation = Simulate2dHopper(x0=flight_state,
+                                                                    duration=2,
+                                                                    actuators_off=True)
 
-    #     # Compare both values
-    #     for i in range(calculated_state_index_at_touchdown_minus.shape[0]):
-    #         self.print_and_assert_almost_equal_simulated_and_calculated(
-    #             simulated_state_at_touchdown_minus[i],
-    #             calculated_state_index_at_touchdown_minus[i],
-    #             'state at touchdown minus [' + str(i) + ']',
-    #             1 if i < 8 else 0
-    #         )
+        # Get simulated touchdown minus state
+        simulated_state_index_at_touchdown_minus = self.find_simulated_state_index_at_touchdown_minus(
+            state_log, controller)
+        simulated_state_at_touchdown_minus = state_log.data(
+        )[:, simulated_state_index_at_touchdown_minus]
+
+        # Get calcualted touchdown minus state
+        calculated_state_index_at_touchdown_minus = controller.get_touchdown_minus_state_based_on_flight_state(
+            flight_state)
+
+        # Compare both values
+        for i in range(calculated_state_index_at_touchdown_minus.shape[0]):
+            self.print_and_assert_almost_equal_simulated_and_calculated(
+                simulated_state_at_touchdown_minus[i],
+                calculated_state_index_at_touchdown_minus[i],
+                'state at touchdown minus [' + str(i) + ']',
+                1 if i < 8 else 0
+            )
 
     # def test_touchdown_plus_state(self):
     #     apex_state = np.zeros(10)
@@ -984,8 +995,8 @@ class TestTakeOffPlus(unittest.TestCase):
         )
 
     def print_and_assert_almost_equal_simulated_and_calculated(self, simulated, calculated, name, digits=2):
-        print('Simulated vs calculated ' + name + ': ' + '{:.{}f}'.format(simulated, digits) +
-              '\t VS \t' + '{:.{}f}'.format(calculated, digits))
+        print('Simulated vs calculated ' + name + ': ' + '{:.{}f}'.format(simulated, digits + 1) +
+              '\t VS \t' + '{:.{}f}'.format(calculated, digits + 1))
         self.assertAlmostEqual(simulated, calculated, digits)
 
     def find_simulated_max_z(self, state_log, first_apex_index):
