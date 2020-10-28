@@ -403,7 +403,8 @@ class Hopper2dController(VectorSystem):
                 found_liftoff_minus_state = True
 
         if not found_liftoff_minus_state:
-            raise Exception('The robot never left the ground')
+            # Don't raise an exception because the simulation could end mid-bounce
+            return current_state, state_logs
 
         return current_state, state_logs
 
@@ -485,23 +486,19 @@ class Hopper2dController(VectorSystem):
                 beta_diff = abs(desired_ratio - current_ratio)
                 state[3] = state[3] + kp_beta * beta_diff
 
-            # current_liftoff_minus_speed = math.sqrt(
-            #     liftoff_minus_state[0+5] ** 2.0 + liftoff_minus_state[1+5] ** 2.0)
+            current_liftoff_minus_speed = math.sqrt(
+                liftoff_minus_state[0+5] ** 2.0 + liftoff_minus_state[1+5] ** 2.0)
 
-            # if current_liftoff_minus_speed > desired_liftoff_minus_speed:
-            #     # P controller
-            #     speed_diff = abs(current_liftoff_minus_speed -
-            #                      desired_liftoff_minus_speed)
-            #     l_at_bottom = l_at_bottom - kp_l * speed_diff
-            # elif current_liftoff_minus_speed < desired_liftoff_minus_speed:
-            #     # P controller
-            #     speed_diff = abs(current_liftoff_minus_speed -
-            #                      desired_liftoff_minus_speed)
-            #     l_at_bottom = l_at_bottom + kp_l * speed_diff
-
-        # print('desired_ratio')
-        # print(desired_ratio)
-        # print(current_ratio)
+            if current_liftoff_minus_speed > desired_liftoff_minus_speed:
+                # P controller
+                speed_diff = abs(current_liftoff_minus_speed -
+                                 desired_liftoff_minus_speed)
+                l_at_bottom = l_at_bottom - kp_l * speed_diff
+            elif current_liftoff_minus_speed < desired_liftoff_minus_speed:
+                # P controller
+                speed_diff = abs(current_liftoff_minus_speed -
+                                 desired_liftoff_minus_speed)
+                l_at_bottom = l_at_bottom + kp_l * speed_diff
 
         return self.get_beta(state[2], state[3]), l_at_bottom
 
@@ -512,7 +509,7 @@ class Hopper2dController(VectorSystem):
         return Kp * (current_beta - desired_beta) + Kv * (current_betad - desired_betad)
 
     def PD_controller_thigh_torque_landed(self, theta, thetad):
-        desired_theta = -0.35
+        desired_theta = -0.15
         Kp = 25.
         Kv = 10.
 
@@ -525,7 +522,7 @@ class Hopper2dController(VectorSystem):
             return self.l_rest
 
     def calculate_actuator_outputs(self, current_state):
-        current_l = 1.0  # self.get_current_l(current_state)
+        current_l = self.get_current_l(current_state)
 
         if self.is_foot_in_contact(current_state) and self.current_desired_touchdown_beta:
             current_beta = self.get_beta(current_state[2], current_state[3])
@@ -535,8 +532,7 @@ class Hopper2dController(VectorSystem):
         if self.is_foot_in_contact(current_state):
             self.current_desired_touchdown_beta = None
 
-            l_rest = 1.0
-            return self.PD_controller_thigh_torque_landed(current_state[2], current_state[2+5]), l_rest
+            return self.PD_controller_thigh_torque_landed(current_state[2], current_state[2+5]), current_l
 
         if current_state[1] < 1.75 and current_state[1+5] > 0.0:
             if not self.printed_lifted_off:
@@ -602,6 +598,7 @@ class Hopper2dController(VectorSystem):
         thigh_torque, l_rest = self.calculate_actuator_outputs(current_state)
         leg_compression_amount = l_rest - current_state[4]
         l_force = self.K_l * leg_compression_amount
+        # print('CONTORLLLER: ' + str(l_rest))
 
         return [thigh_torque, l_force]
 
