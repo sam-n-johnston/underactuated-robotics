@@ -283,6 +283,7 @@ class Hopper2dController(VectorSystem):
 
         state_logs = np.copy(current_state)
         state_logs = state_logs[:, np.newaxis]
+        print('START: {:.{}f}'.format(current_state[1+5], 3))
 
         # touchdown_time = 0.645
 
@@ -304,7 +305,7 @@ class Hopper2dController(VectorSystem):
                 l_rest = 1.0
             leg_compression_amount = l_rest - current_state[4]
             # Somehow, all the values in the simulator of mass & spring constant don't seem to be correct
-            k_used_by_simulator = 80.0
+            k_used_by_simulator = self.K_l  # 80.0
             spring_force = k_used_by_simulator * leg_compression_amount
 
             # Spring is pushing back only the body, not the foot's mass
@@ -362,8 +363,13 @@ class Hopper2dController(VectorSystem):
                 new_velocity_perpendicular_to_leg_frame * math.cos(beta)
             # On the first step, this drastically reduces and causes disprepancies.
             current_state[1+5] = new_velocity_along_leg_frame * \
-                math.cos(beta) + \
+                math.cos(beta) - \
                 new_velocity_perpendicular_to_leg_frame * math.sin(beta)
+
+            print('along: {:.{}f}'.format(new_velocity_along_leg_frame, 3) +
+                  '\t perpendicular: {:.{}f}'.format(new_velocity_perpendicular_to_leg_frame, 3) +
+                  '\t beta: {:.{}f}'.format(beta, 3))
+            print('1: {:.{}f}'.format(current_state[1+5], 3))
 
             # Set new positions
             current_state[0] = current_state[0] + current_state[0+5] * timestep
@@ -508,8 +514,6 @@ class Hopper2dController(VectorSystem):
               str(desired_liftoff_minus_speed))
         print('current_desired_touchdown_beta: \t' +
               str(self.current_desired_touchdown_beta))
-        print('self.current_desired_l_at_bottom: \t' +
-              str(self.current_desired_l_at_bottom))
 
         return self.get_beta(state[2], state[3]), l_at_bottom
 
@@ -576,6 +580,8 @@ class Hopper2dController(VectorSystem):
 
         print('Hop #' +
               str(self.total_number_of_hops))
+        print('self.current_desired_l_at_bottom: \t' +
+              str(self.current_desired_l_at_bottom))
 
         current_beta = self.get_beta(current_state[2], current_state[3])
         current_betad = self.get_beta(current_state[2+5], current_state[3+5])

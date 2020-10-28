@@ -825,10 +825,11 @@ class TestTakeOffPlus(unittest.TestCase):
 
     #     self.liftoff_minus_state(apex_state)
 
+    # GOOD
     def test_liftoff_minus_state_1(self):
         apex_state = np.zeros(10)
         apex_state[1] = 3.5  # height
-        apex_state[2] = -0.15  # theta
+        apex_state[2] = -0.15  # alpha
         apex_state[4] = 0.5  # l distance
 
         self.liftoff_minus_state(apex_state)
@@ -889,7 +890,7 @@ class TestTakeOffPlus(unittest.TestCase):
     def liftoff_minus_state(self, apex_state):
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
-                                                                    duration=2,
+                                                                    duration=2.0,
                                                                     actuators_off=True)
 
         # Get simulated liftoff minus state
@@ -915,6 +916,27 @@ class TestTakeOffPlus(unittest.TestCase):
         extra_left_padding = simulated_state_index_at_touchdown_plus
         extra_right_padding = simulated_state_index_at_liftoff_minus - \
             extra_left_padding - np.shape(calculated_state_logs)[1]
+
+        print('STARING')
+        print(simulated_state_index_at_touchdown_plus)
+        print(simulated_state_index_at_liftoff_minus)
+
+        if extra_right_padding < 0:
+            extra_right_padding = 0
+            print('STARING1')
+        #     print(extra_right_padding)
+        #     print(np.shape(calculated_state_logs))
+        #     calculated_state_logs = calculated_state_logs[:,
+        #                                                   0:extra_right_padding]
+        #     print(np.shape(calculated_state_logs))
+        #     print(np.shape(simulated_state_logs))
+        #     # print(sample_times[0])
+        #     # print(sample_times[1])
+        #     # simulated_state_logs = np.pad(
+        #     #     simulated_state_logs, ((0, 0), (0, -extra_right_padding)))
+        #     # extra_right_padding = 0
+
+        print('TRYING')
 
         calculated_state_logs = np.pad(
             calculated_state_logs, ((0, 0), (extra_left_padding, extra_right_padding)))
@@ -1056,6 +1078,18 @@ class TestTakeOffPlus(unittest.TestCase):
         calculated_state_log
     ):
 
+        if np.shape(simulated_state_log)[1] != np.shape(calculated_state_log)[1]:
+            timestep = 0.0005
+            final_time = np.shape(calculated_state_log)[1] * timestep
+            print('final_time')
+            print(final_time)
+            calculated_sample_times = np.arange(0, final_time, timestep)
+            self.single_log_state_log(
+                calculated_sample_times, calculated_state_log, 'calculated_')
+            self.single_log_state_log(
+                simulated_sample_times, simulated_state_log, 'simulated_')
+            return
+
         def log_single_state(index, name):
             plt.figure().set_size_inches(10, 5)
             plt.plot(simulated_sample_times, simulated_state_log[index, :])
@@ -1085,6 +1119,35 @@ class TestTakeOffPlus(unittest.TestCase):
                     "calculated_beta", "calculated_beta_d"])
 
         log_single_state(4, 'leg_extension')
+
+        plt.show()
+
+    def single_log_state_log(
+        self,
+        sample_times,
+        state_log,
+        info
+    ):
+
+        def log_single_state(index, name):
+            plt.figure().set_size_inches(10, 5)
+            plt.plot(sample_times, state_log[index, :])
+            plt.plot(sample_times, state_log[index+5, :])
+            plt.grid(True)
+            plt.legend([name, name + "_d"])
+
+        log_single_state(0, info + 'body_x')
+        log_single_state(1, info + 'body_z')
+        log_single_state(2, info + 'body_theta')
+        log_single_state(3, info + 'alpha')
+
+        plt.figure().set_size_inches(10, 5)
+        plt.plot(sample_times, np.add(state_log[2, :], state_log[3, :]))
+        plt.plot(sample_times, np.add(state_log[2+5, :], state_log[3+5, :]))
+        plt.grid(True)
+        plt.legend([info + "beta", info + "beta_d"])
+
+        log_single_state(4, info + 'leg_extension')
 
         plt.show()
 
