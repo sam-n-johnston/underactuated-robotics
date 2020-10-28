@@ -451,7 +451,7 @@ class Hopper2dController(VectorSystem):
 
     #     return 0.0
 
-    def get_touchdown_beta_for_liftoff_beta(self, flight_state, desired_liftoff_beta, desired_liftoff_minus_speed):
+    def get_touchdown_beta_for_liftoff_beta(self, flight_state):
         # Controlled by setting touchdown beta
         # set the desired lo+ beta and see if the controller can find it, then test in simulation
         kp_beta = 0.1
@@ -486,6 +486,9 @@ class Hopper2dController(VectorSystem):
                 beta_diff = abs(desired_ratio - current_ratio)
                 state[3] = state[3] + kp_beta * beta_diff
 
+            desired_liftoff_minus_speed = math.sqrt(
+                desired_zd_plus ** 2.0 + desired_xd_plus ** 2.0)
+
             current_liftoff_minus_speed = math.sqrt(
                 liftoff_minus_state[0+5] ** 2.0 + liftoff_minus_state[1+5] ** 2.0)
 
@@ -499,6 +502,14 @@ class Hopper2dController(VectorSystem):
                 speed_diff = abs(current_liftoff_minus_speed -
                                  desired_liftoff_minus_speed)
                 l_at_bottom = l_at_bottom + kp_l * speed_diff
+
+        print('desired_liftoff_beta: \t\t\t' + str(state[3]))
+        print('desired_liftoff_minus_speed: \t\t' +
+              str(desired_liftoff_minus_speed))
+        print('current_desired_touchdown_beta: \t' +
+              str(self.current_desired_touchdown_beta))
+        print('self.current_desired_l_at_bottom: \t' +
+              str(self.current_desired_l_at_bottom))
 
         return self.get_beta(state[2], state[3]), l_at_bottom
 
@@ -560,21 +571,11 @@ class Hopper2dController(VectorSystem):
 
             return thigh_torque, current_l
 
-        desired_liftoff_beta = self.calculate_liftoff_angle()
-        desired_liftoff_minus_speed = 8.0
-
         self.current_desired_touchdown_beta, self.current_desired_l_at_bottom = self.get_touchdown_beta_for_liftoff_beta(
-            current_state, desired_liftoff_beta, desired_liftoff_minus_speed)
+            current_state)
 
         print('Hop #' +
               str(self.total_number_of_hops))
-        print('desired_liftoff_beta: \t\t\t' + str(desired_liftoff_beta))
-        print('desired_liftoff_minus_speed: \t\t' +
-              str(desired_liftoff_minus_speed))
-        print('current_desired_touchdown_beta: \t' +
-              str(self.current_desired_touchdown_beta))
-        print('self.current_desired_l_at_bottom: \t' +
-              str(self.current_desired_l_at_bottom))
 
         current_beta = self.get_beta(current_state[2], current_state[3])
         current_betad = self.get_beta(current_state[2+5], current_state[3+5])
