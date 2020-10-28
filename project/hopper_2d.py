@@ -60,6 +60,7 @@ class Hopper2dController(VectorSystem):
         self.foot_frame = hopper.GetFrameByName("foot")
         self.body_frame = hopper.GetFrameByName("body")
         self.world_frame = hopper.world_frame()
+        self.l_rest = 1.0
 
         # The context for the hopper
         self.plant_context = self.hopper.CreateDefaultContext()
@@ -78,7 +79,7 @@ class Hopper2dController(VectorSystem):
         self.gravity = 9.81
 
         # This is an arbitrary choice of spring constant for the leg.
-        self.K_l = 100
+        self.K_l = 79.5
         self.desired_alpha_array = []
 
     def calculate_energy_loss_by_stance_phase(self, flight_phase):
@@ -268,7 +269,7 @@ class Hopper2dController(VectorSystem):
         distance = math.sqrt(x_diff ** 2.0 + z_diff ** 2.0)
         return distance
 
-    def get_liftoff_minus_state_based_on_touchdown_plus_state(self, touchdown_plus_state):
+    def get_liftoff_minus_state_based_on_touchdown_plus_state(self, touchdown_plus_state, l_at_bottom):
         timestep = 0.0005
         current_time = 0.0
         current_state = np.copy(touchdown_plus_state)
@@ -296,12 +297,14 @@ class Hopper2dController(VectorSystem):
             self.m_b * (leg_length) ** 2.0
 
         while not found_liftoff_minus_state and current_time < 2.0:
-            # if bottom_reached:
-            #     l_rest = 2.0  # to receive in argument
-            l_rest = 1.0
+            bottom_reached = current_state[1+5] > 0.0
+            if bottom_reached:
+                l_rest = l_at_bottom
+            else:
+                l_rest = 1.0
             leg_compression_amount = l_rest - current_state[4]
             # self.spring_force(l_rest - current_state[4])
-            spring_force = 79.5 * leg_compression_amount
+            spring_force = self.K_l * leg_compression_amount
 
             # Spring is pushing back only the body, not the foot's mass
             f_gravity_along_leg_frame = f_gravity_body * math.cos(beta)
@@ -403,15 +406,13 @@ class Hopper2dController(VectorSystem):
 
         return current_state, state_logs
 
-    def get_liftoff_minus_state_based_on_flight_state(self, flight_phase):
+    def get_liftoff_minus_state_based_on_flight_state(self, flight_phase, l_at_bottom):
         touchdown_minus_state = self.get_touchdown_minus_state_based_on_flight_state(
             flight_phase)
 
-        # print('touchdown_minus_state')
-        # print(touchdown_minus_state)
-
         liftoff_minus, state_logs = self.get_liftoff_minus_state_based_on_touchdown_plus_state(
-            touchdown_minus_state
+            touchdown_minus_state,
+            l_at_bottom
         )
 
         return liftoff_minus, state_logs
@@ -448,17 +449,20 @@ class Hopper2dController(VectorSystem):
 
     #     return 0.0
 
-    def get_touchdown_beta_for_liftoff_beta(self, flight_state, desired_liftoff_beta):
+    def get_touchdown_beta_for_liftoff_beta(self, flight_state, desired_liftoff_beta, desired_liftoff_minus_speed):
         # Controlled by setting touchdown beta
         # set the desired lo+ beta and see if the controller can find it, then test in simulation
         kp_beta = 0.1
+        kp_l = 0.1
 
         state = flight_state.copy()
         # Set state to current value
 
+        l_at_bottom = 1.0
+
         for i in range(25):
             liftoff_minus_state, _ = self.get_liftoff_minus_state_based_on_flight_state(
-                state)
+                state, l_at_bottom)
 
             current_liftoff_beta = self.get_beta(
                 liftoff_minus_state[2], liftoff_minus_state[3])
@@ -474,7 +478,21 @@ class Hopper2dController(VectorSystem):
                                 desired_liftoff_beta)
                 state[3] = state[3] + kp_beta * beta_diff
 
-        return self.get_beta(state[2], state[3])
+            current_liftoff_minus_speed = math.sqrt(
+                liftoff_minus_state[2] ** 2.0 + liftoff_minus_state[3] ** 2.0)
+
+            if current_liftoff_minus_speed > desired_liftoff_minus_speed:
+                # P controller
+                speed_diff = abs(current_liftoff_minus_speed -
+                                 desired_liftoff_minus_speed)
+                l_at_bottom = l_at_bottom - kp_l * speed_diff
+            elif current_liftoff_minus_speed < desired_liftoff_minus_speed:
+                # P controller
+                speed_diff = abs(current_liftoff_minus_speed -
+                                 desired_liftoff_minus_speed)
+                l_at_bottom = l_at_bottom + kp_l * speed_diff
+
+        return self.get_beta(state[2], state[3]), l_at_bottom
 
     def PD_controller_thigh_torque(self, current_beta, current_betad, desired_beta, desired_betad):
         Kp = -50.
@@ -489,7 +507,15 @@ class Hopper2dController(VectorSystem):
 
         return Kp * (theta - desired_theta) + Kv * (thetad)
 
-    def calculate_thigh_torque(self, current_state):
+    def get_current_l(self, current_state):
+        if current_state[1+5] > 0.0:
+            return self.current_desired_l_at_bottom
+        else:
+            return self.l_rest
+
+    def calculate_actuator_outputs(self, current_state):
+        current_l = self.get_current_l(current_state)
+
         if self.is_foot_in_contact(current_state) and self.current_desired_touchdown_beta:
             current_beta = self.get_beta(current_state[2], current_state[3])
             print('touchdown_beta: \t\t\t' +
@@ -498,7 +524,8 @@ class Hopper2dController(VectorSystem):
         if self.is_foot_in_contact(current_state):
             self.current_desired_touchdown_beta = None
 
-            return self.PD_controller_thigh_torque_landed(current_state[2], current_state[2+5])
+            l_rest = 1.0
+            return self.PD_controller_thigh_torque_landed(current_state[2], current_state[2+5]), l_rest
 
         if current_state[1] < 1.75 and current_state[1+5] > 0.0:
             if not self.printed_lifted_off:
@@ -510,7 +537,7 @@ class Hopper2dController(VectorSystem):
                 print('liftoff_beta: \t\t\t\t' +
                       str(current_beta))
 
-            return 0.0
+            return 0.0, current_l
 
         self.printed_lifted_off = False
 
@@ -524,12 +551,12 @@ class Hopper2dController(VectorSystem):
             thigh_torque = self.PD_controller_thigh_torque(
                 current_beta, current_betad, desired_beta, desired_betad)
 
-            return thigh_torque
+            return thigh_torque, current_l
 
         desired_liftoff_beta = self.calculate_liftoff_angle()
 
-        self.current_desired_touchdown_beta = self.get_touchdown_beta_for_liftoff_beta(
-            current_state, desired_liftoff_beta)
+        self.current_desired_touchdown_beta, self.current_desired_l_at_bottom = self.get_touchdown_beta_for_liftoff_beta(
+            current_state, desired_liftoff_beta, 1.0)
 
         print('Hop #' +
               str(self.total_number_of_hops))
@@ -545,21 +572,18 @@ class Hopper2dController(VectorSystem):
         thigh_torque = self.PD_controller_thigh_torque(
             current_beta, current_betad, desired_beta, desired_betad)
 
-        return thigh_torque
+        return thigh_torque, current_l
 
     # Should return an array with 2 items, one for torque of leg, one for l_rest
     def controller(self, current_state):
         if self.actuators_off:
-            l_rest = 1.0  # To Calculate
+            l_rest = 1.0
             leg_compression_amount = l_rest - current_state[4]
             l_force = self.spring_force(leg_compression_amount)
 
             return [0.0, l_force]
 
-        thigh_torque = self.calculate_thigh_torque(current_state)
-        # print('controller: ' + str(thigh_torque) + '\t beta: ' + str(self.get_beta(
-        #     current_state[2], current_state[3])) + '\t beta_desired: ' + str(self.current_desired_touchdown_beta))
-        l_rest = 1.0  # To Calculate
+        thigh_torque, l_rest = self.calculate_actuator_outputs(current_state)
         leg_compression_amount = l_rest - current_state[4]
         l_force = self.K_l * leg_compression_amount
 
