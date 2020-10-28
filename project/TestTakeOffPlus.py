@@ -1071,11 +1071,6 @@ class TestTakeOffPlus(unittest.TestCase):
         log_single_state(2, 'body_theta')
         log_single_state(3, 'alpha')
 
-        print('TESTOINGASDFASDFASDF')
-        test = np.add(calculated_state_log[2, :], calculated_state_log[3, :])
-        print(test[2000])
-        print('max: ' + str(np.amin(test)))
-
         plt.figure().set_size_inches(10, 5)
         plt.plot(simulated_sample_times, np.add(
             simulated_state_log[2, :], simulated_state_log[3, :]))
