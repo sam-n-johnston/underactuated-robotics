@@ -306,7 +306,9 @@ class Hopper2dController(VectorSystem):
             # if bottom_reached:
             #     l_rest = 2.0  # to receive in argument
             l_rest = 1.0
-            spring_force = self.spring_force(l_rest - current_state[4])
+            leg_compression_amount = l_rest - current_state[4]
+            # self.spring_force(l_rest - current_state[4])
+            spring_force = 79.5 * leg_compression_amount
 
             # Spring is pushing back only the body, not the foot's mass
             f_gravity_along_leg_frame = f_gravity_body * math.cos(beta)
