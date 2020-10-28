@@ -363,7 +363,7 @@ class Hopper2dController(VectorSystem):
                 new_velocity_perpendicular_to_leg_frame * math.cos(beta)
             # On the first step, this drastically reduces and causes disprepancies.
             current_state[1+5] = new_velocity_along_leg_frame * \
-                math.cos(beta) - \
+                math.cos(beta) + \
                 new_velocity_perpendicular_to_leg_frame * math.sin(beta)
 
             # Set new positions
