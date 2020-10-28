@@ -903,7 +903,7 @@ class TestTakeOffPlus(unittest.TestCase):
 
         # Get calcualted touchdown minus state
         calculated_state_at_liftoff_minus, calculated_state_logs = controller.get_liftoff_minus_state_based_on_flight_state(
-            apex_state)
+            apex_state, 1.0)
 
         simulated_state_logs = np.copy(state_log.data())
         simulated_state_logs = simulated_state_logs[:,

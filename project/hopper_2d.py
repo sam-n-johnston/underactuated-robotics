@@ -79,7 +79,7 @@ class Hopper2dController(VectorSystem):
         self.gravity = 9.81
 
         # This is an arbitrary choice of spring constant for the leg.
-        self.K_l = 79.5
+        self.K_l = 100.0
         self.desired_alpha_array = []
 
     def calculate_energy_loss_by_stance_phase(self, flight_phase):
@@ -303,7 +303,9 @@ class Hopper2dController(VectorSystem):
             else:
                 l_rest = 1.0
             leg_compression_amount = l_rest - current_state[4]
-            spring_force = self.K_l * leg_compression_amount
+            # Somehow, all the values in the simulator of mass & spring constant don't seem to be correct
+            k_used_by_simulator = 80.0
+            spring_force = k_used_by_simulator * leg_compression_amount
 
             # Spring is pushing back only the body, not the foot's mass
             f_gravity_along_leg_frame = f_gravity_body * math.cos(beta)
@@ -459,37 +461,47 @@ class Hopper2dController(VectorSystem):
 
         l_at_bottom = 1.0
 
-        for i in range(25):
+        for i in range(35):
             liftoff_minus_state, _ = self.get_liftoff_minus_state_based_on_flight_state(
                 state, l_at_bottom)
 
-            current_liftoff_beta = self.get_beta(
-                liftoff_minus_state[2], liftoff_minus_state[3])
+            xd_plus = self.calculate_liftoff_plus_xd_based_off_liftoff_minus_xd(
+                liftoff_minus_state[0+5])
+            zd_plus = self.calculate_liftoff_plus_zd_based_off_liftoff_minus_zd(
+                liftoff_minus_state[1+5])
 
-            if current_liftoff_beta > desired_liftoff_beta:
+            desired_zd_plus = self.calculate_desired_liftoff_plus_zd()
+            desired_xd_plus = self.desired_lateral_velocity
+
+            desired_ratio = desired_xd_plus / desired_zd_plus
+            current_ratio = xd_plus / zd_plus
+
+            if current_ratio > desired_ratio:
                 # P controller
-                beta_diff = abs(current_liftoff_beta -
-                                desired_liftoff_beta)
+                beta_diff = abs(desired_ratio - current_ratio)
                 state[3] = state[3] - kp_beta * beta_diff
-            elif current_liftoff_beta < desired_liftoff_beta:
+            elif current_ratio < desired_ratio:
                 # P controller
-                beta_diff = abs(current_liftoff_beta -
-                                desired_liftoff_beta)
+                beta_diff = abs(desired_ratio - current_ratio)
                 state[3] = state[3] + kp_beta * beta_diff
 
-            current_liftoff_minus_speed = math.sqrt(
-                liftoff_minus_state[0+5] ** 2.0 + liftoff_minus_state[1+5] ** 2.0)
+            # current_liftoff_minus_speed = math.sqrt(
+            #     liftoff_minus_state[0+5] ** 2.0 + liftoff_minus_state[1+5] ** 2.0)
 
-            if current_liftoff_minus_speed > desired_liftoff_minus_speed:
-                # P controller
-                speed_diff = abs(current_liftoff_minus_speed -
-                                 desired_liftoff_minus_speed)
-                l_at_bottom = l_at_bottom - kp_l * speed_diff
-            elif current_liftoff_minus_speed < desired_liftoff_minus_speed:
-                # P controller
-                speed_diff = abs(current_liftoff_minus_speed -
-                                 desired_liftoff_minus_speed)
-                l_at_bottom = l_at_bottom + kp_l * speed_diff
+            # if current_liftoff_minus_speed > desired_liftoff_minus_speed:
+            #     # P controller
+            #     speed_diff = abs(current_liftoff_minus_speed -
+            #                      desired_liftoff_minus_speed)
+            #     l_at_bottom = l_at_bottom - kp_l * speed_diff
+            # elif current_liftoff_minus_speed < desired_liftoff_minus_speed:
+            #     # P controller
+            #     speed_diff = abs(current_liftoff_minus_speed -
+            #                      desired_liftoff_minus_speed)
+            #     l_at_bottom = l_at_bottom + kp_l * speed_diff
+
+        # print('desired_ratio')
+        # print(desired_ratio)
+        # print(current_ratio)
 
         return self.get_beta(state[2], state[3]), l_at_bottom
 
@@ -500,7 +512,7 @@ class Hopper2dController(VectorSystem):
         return Kp * (current_beta - desired_beta) + Kv * (current_betad - desired_betad)
 
     def PD_controller_thigh_torque_landed(self, theta, thetad):
-        desired_theta = -0.1
+        desired_theta = -0.35
         Kp = 25.
         Kv = 10.
 
@@ -513,7 +525,7 @@ class Hopper2dController(VectorSystem):
             return self.l_rest
 
     def calculate_actuator_outputs(self, current_state):
-        current_l = self.get_current_l(current_state)
+        current_l = 1.0  # self.get_current_l(current_state)
 
         if self.is_foot_in_contact(current_state) and self.current_desired_touchdown_beta:
             current_beta = self.get_beta(current_state[2], current_state[3])
