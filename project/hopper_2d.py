@@ -295,13 +295,6 @@ class Hopper2dController(VectorSystem):
             (self.hopper_leg_length / 2.0) ** 2.0 + \
             self.m_b * (leg_length) ** 2.0
 
-        print('STARTING')
-        print(current_state[0+5])
-        print(current_state[1+5])
-        print('STARTING1')
-        print(previous_velocity_along_leg_frame)
-        print(previous_velocity_perpendicular_to_leg_frame)
-
         while not found_liftoff_minus_state and current_time < 2.0:
             # if bottom_reached:
             #     l_rest = 2.0  # to receive in argument
@@ -555,7 +548,6 @@ class Hopper2dController(VectorSystem):
         return thigh_torque
 
     # Should return an array with 2 items, one for torque of leg, one for l_rest
-
     def controller(self, current_state):
         if self.actuators_off:
             l_rest = 1.0  # To Calculate
