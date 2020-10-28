@@ -303,7 +303,6 @@ class Hopper2dController(VectorSystem):
             else:
                 l_rest = 1.0
             leg_compression_amount = l_rest - current_state[4]
-            # self.spring_force(l_rest - current_state[4])
             spring_force = self.K_l * leg_compression_amount
 
             # Spring is pushing back only the body, not the foot's mass
@@ -479,7 +478,7 @@ class Hopper2dController(VectorSystem):
                 state[3] = state[3] + kp_beta * beta_diff
 
             current_liftoff_minus_speed = math.sqrt(
-                liftoff_minus_state[2] ** 2.0 + liftoff_minus_state[3] ** 2.0)
+                liftoff_minus_state[0+5] ** 2.0 + liftoff_minus_state[1+5] ** 2.0)
 
             if current_liftoff_minus_speed > desired_liftoff_minus_speed:
                 # P controller
@@ -554,15 +553,20 @@ class Hopper2dController(VectorSystem):
             return thigh_torque, current_l
 
         desired_liftoff_beta = self.calculate_liftoff_angle()
+        desired_liftoff_minus_speed = 8.0
 
         self.current_desired_touchdown_beta, self.current_desired_l_at_bottom = self.get_touchdown_beta_for_liftoff_beta(
-            current_state, desired_liftoff_beta, 1.0)
+            current_state, desired_liftoff_beta, desired_liftoff_minus_speed)
 
         print('Hop #' +
               str(self.total_number_of_hops))
         print('desired_liftoff_beta: \t\t\t' + str(desired_liftoff_beta))
+        print('desired_liftoff_minus_speed: \t\t' +
+              str(desired_liftoff_minus_speed))
         print('current_desired_touchdown_beta: \t' +
               str(self.current_desired_touchdown_beta))
+        print('self.current_desired_l_at_bottom: \t' +
+              str(self.current_desired_l_at_bottom))
 
         current_beta = self.get_beta(current_state[2], current_state[3])
         current_betad = self.get_beta(current_state[2+5], current_state[3+5])
