@@ -285,6 +285,7 @@ class Hopper2dController(VectorSystem):
         state_logs = np.copy(current_state)
         state_logs = state_logs[:, np.newaxis]
         print('START: {:.{}f}'.format(current_state[1+5], 3))
+        print(previous_beta1)
 
         # touchdown_time = 0.645
 
@@ -298,6 +299,17 @@ class Hopper2dController(VectorSystem):
         previous_moment_of_inertia = self.m_f * \
             (self.hopper_leg_length / 2.0) ** 2.0 + \
             self.m_b * (previous_leg_length) ** 2.0
+
+        print('previous_velocity_along_leg_frame')
+        print(current_state[0+5] * math.sin(
+            previous_beta1))
+        print(current_state[1+5] * math.cos(previous_beta1))
+        print(current_state[0+5] * math.cos(
+            previous_beta1))
+        print(-current_state[1+5] * math.sin(previous_beta1))
+        print('done')
+        print(previous_velocity_along_leg_frame)
+        print(previous_velocity_perpendicular_to_leg_frame)
 
         while not found_liftoff_minus_state and current_time < 2.0:
             bottom_reached = current_state[1+5] > 0.0
@@ -326,38 +338,49 @@ class Hopper2dController(VectorSystem):
 
             f_gravity_foot_torque = f_gravity_foot_perpendicular_to_leg_frame * \
                 self.hopper_leg_length / 2.0
-            f_gravity_body_torque = f_gravity_body_perpendicular_to_leg_frame * previous_leg_length
+            f_gravity_body_torque = f_gravity_body_perpendicular_to_leg_frame * \
+                (previous_leg_length)
 
             f_gravity_torque = f_gravity_body_torque + f_gravity_foot_torque
 
             # Calculate moment of inertia
+            # moment_leg_l = previous_leg_length + 0.25
             moment_of_inertia = self.m_f * \
                 (self.hopper_leg_length / 2.0) ** 2.0 + \
                 self.m_b * (previous_leg_length) ** 2.0
 
+            # print('ang vel ratio')
+            # print(previous_moment_of_inertia / moment_of_inertia)
+
             # Update angular momentum now that the leg length changed\
             # print('testin===============')
             # print(previous_velocity_perpendicular_to_leg_frame)
-            angular_velocity = previous_angular_velocity * \
-                previous_moment_of_inertia / moment_of_inertia
+            # angular_velocity = previous_angular_velocity * \
+            #     previous_moment_of_inertia / moment_of_inertia
 
-            previous_velocity_perpendicular_to_leg_frame = angular_velocity * previous_leg_length
+            # previous_velocity_perpendicular_to_leg_frame = angular_velocity * previous_leg_length
             # print(previous_velocity_perpendicular_to_leg_frame)
 
             # Update acceleration
-            rotational_acceleration = f_gravity_torque / moment_of_inertia
-            acceleration_perpendicular_to_leg_frame = rotational_acceleration * previous_leg_length
+            total_torque = -f_gravity_torque
+            delta_angular_momentum = total_torque * timestep
+            new_angular_velocity = -(delta_angular_momentum -
+                                     previous_moment_of_inertia * previous_angular_velocity) / moment_of_inertia
+            print('delta_angular_momentum')
+            print(delta_angular_momentum)
+            # rotational_acceleration = f_gravity_torque / moment_of_inertia
+            # rotational_acceleration * previous_leg_length
+            # acceleration_perpendicular_to_leg_frame = 0.0
 
             # Update those velocities based on the rotational acceleration
             new_velocity_along_leg_frame = previous_velocity_along_leg_frame + \
                 acceleration_along_leg_frame * timestep
-            new_velocity_perpendicular_to_leg_frame = previous_velocity_perpendicular_to_leg_frame + \
-                acceleration_perpendicular_to_leg_frame * timestep
+            new_velocity_perpendicular_to_leg_frame = new_angular_velocity * previous_leg_length
 
             previous_velocity_along_leg_frame = new_velocity_along_leg_frame
             previous_velocity_perpendicular_to_leg_frame = new_velocity_perpendicular_to_leg_frame
             previous_moment_of_inertia = moment_of_inertia
-            previous_angular_velocity = new_velocity_perpendicular_to_leg_frame / previous_leg_length
+            previous_angular_velocity = new_angular_velocity
 
             beta1 = previous_beta1 + \
                 previous_velocity_perpendicular_to_leg_frame * timestep
@@ -389,6 +412,8 @@ class Hopper2dController(VectorSystem):
             # Set new positions
             delta_x = math.sin(beta1) * leg_length
             delta_z = math.cos(beta1) * leg_length
+            # print('delta_x: {:.{}f}'.format(delta_x, 5) + '\t beta1: {:.{}f}'.format(
+            #     beta1, 5) + '\t leg length:: {:.{}f}'.format(leg_length, 5))
             # print('delta_x')
             # print(delta_x)
             # print(delta_z)
@@ -414,6 +439,7 @@ class Hopper2dController(VectorSystem):
             # current_state[2] = current_state[2] + current_state[2+5] * timestep
             new_alpha = beta1 - current_state[2]
             current_state[3] = new_alpha
+            current_state[3+5] = new_angular_velocity
 
             current_time = current_time + timestep\
 
