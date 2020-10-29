@@ -295,7 +295,7 @@ class Hopper2dController(VectorSystem):
             previous_beta1) - current_state[1+5] * math.sin(previous_beta1)
         previous_leg_length = self.get_leg_length(foot_position, body_position)
         previous_angular_velocity = previous_velocity_perpendicular_to_leg_frame / \
-            previous_leg_length
+            (previous_leg_length)
         previous_moment_of_inertia = self.m_f * \
             (self.hopper_leg_length / 2.0) ** 2.0 + \
             self.m_b * (previous_leg_length) ** 2.0
@@ -343,22 +343,15 @@ class Hopper2dController(VectorSystem):
             f_gravity_torque = f_gravity_body_torque + f_gravity_foot_torque
 
             # Calculate moment of inertia
-            # moment_leg_l = previous_leg_length + 0.25
             moment_of_inertia = self.m_f * \
                 (self.hopper_leg_length / 2.0) ** 2.0 + \
                 self.m_b * (previous_leg_length) ** 2.0
-
-            # print('ang vel ratio')
-            # print(previous_moment_of_inertia / moment_of_inertia)
 
             # Update acceleration
             total_torque = f_gravity_torque
             delta_angular_momentum = total_torque * timestep
             new_angular_velocity = -(delta_angular_momentum -
                                      previous_moment_of_inertia * previous_angular_velocity) / moment_of_inertia
-            # rotational_acceleration = f_gravity_torque / moment_of_inertia
-            # rotational_acceleration * previous_leg_length
-            # acceleration_perpendicular_to_leg_frame = 0.0
 
             # Update those velocities based on the rotational acceleration
             new_velocity_along_leg_frame = previous_velocity_along_leg_frame + \
