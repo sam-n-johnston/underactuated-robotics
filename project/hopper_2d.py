@@ -296,27 +296,28 @@ class Hopper2dController(VectorSystem):
         previous_leg_length = self.get_leg_length(foot_position, body_position)
         previous_angular_velocity = previous_velocity_perpendicular_to_leg_frame / \
             (previous_leg_length)
-        previous_moment_of_inertia = self.m_f * \
-            (self.hopper_leg_length / 2.0) ** 2.0 + \
-            self.m_b * (previous_leg_length) ** 2.0
+        previous_moment_of_inertia = (self.m_f *
+                                      (self.hopper_leg_length / 2.0) ** 2.0 +
+                                      self.m_b * (previous_leg_length) ** 2.0)
 
         print('previous_velocity_along_leg_frame')
-        print(current_state[0+5] * math.sin(
-            previous_beta1))
-        print(current_state[1+5] * math.cos(previous_beta1))
-        print(current_state[0+5] * math.cos(
-            previous_beta1))
-        print(-current_state[1+5] * math.sin(previous_beta1))
-        print('done')
-        print(previous_velocity_along_leg_frame)
-        print(previous_velocity_perpendicular_to_leg_frame)
+        print(previous_leg_length)
+        # print(current_state[0+5] * math.sin(
+        #     previous_beta1))
+        # print(current_state[1+5] * math.cos(previous_beta1))
+        # print(current_state[0+5] * math.cos(
+        #     previous_beta1))
+        # print(-current_state[1+5] * math.sin(previous_beta1))
+        # print('done')
+        # print(previous_velocity_along_leg_frame)
+        # print(previous_velocity_perpendicular_to_leg_frame)
 
         while not found_liftoff_minus_state and current_time < 2.0:
-            bottom_reached = current_state[1+5] > 0.0
-            if bottom_reached:
-                l_rest = l_at_bottom
-            else:
-                l_rest = 1.0
+            # bottom_reached = current_state[1+5] > 0.0
+            # if bottom_reached:
+            #     l_rest = l_at_bottom
+            # else:
+            l_rest = 1.0
             leg_compression_amount = l_rest - current_state[4]
             # Somehow, all the values in the simulator of mass & spring constant don't seem to be correct
             k_used_by_simulator = self.K_l  # 80.0
@@ -343,15 +344,15 @@ class Hopper2dController(VectorSystem):
             f_gravity_torque = f_gravity_body_torque + f_gravity_foot_torque
 
             # Calculate moment of inertia
-            moment_of_inertia = self.m_f * \
-                (self.hopper_leg_length / 2.0) ** 2.0 + \
-                self.m_b * (previous_leg_length) ** 2.0
+            moment_of_inertia = (self.m_f *
+                                 (self.hopper_leg_length / 2.0) ** 2.0 +
+                                 self.m_b * (previous_leg_length) ** 2.0)
 
             # Update acceleration
             total_torque = f_gravity_torque
             delta_angular_momentum = total_torque * timestep
-            new_angular_velocity = -(delta_angular_momentum -
-                                     previous_moment_of_inertia * previous_angular_velocity) / moment_of_inertia
+            new_angular_velocity = (delta_angular_momentum +
+                                    previous_moment_of_inertia * previous_angular_velocity) / moment_of_inertia
 
             # Update those velocities based on the rotational acceleration
             new_velocity_along_leg_frame = previous_velocity_along_leg_frame + \
