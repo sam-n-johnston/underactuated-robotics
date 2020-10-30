@@ -350,9 +350,9 @@ class Hopper2dController(VectorSystem):
 
             # Update acceleration
             total_torque = f_gravity_torque
-            delta_angular_momentum = total_torque * timestep
-            new_angular_velocity = (delta_angular_momentum +
-                                    previous_moment_of_inertia * previous_angular_velocity) / moment_of_inertia
+            acceleration = total_torque / previous_moment_of_inertia
+            new_angular_velocity = previous_angular_velocity * \
+                previous_moment_of_inertia / moment_of_inertia + acceleration * timestep
 
             # Update those velocities based on the rotational acceleration
             new_velocity_along_leg_frame = previous_velocity_along_leg_frame + \
