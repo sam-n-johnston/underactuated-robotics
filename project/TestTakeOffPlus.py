@@ -818,12 +818,12 @@ class TestTakeOffPlus(unittest.TestCase):
     #     self.assertAlmostEqual(
     #         calculated_beta, simulated_beta, 1)
 
-    # def test_liftoff_minus_state_0(self):
-    #     apex_state = np.zeros(10)
-    #     apex_state[1] = 3.5  # height
-    #     apex_state[4] = 0.5  # l distance
+    def test_liftoff_minus_state_0(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[4] = 0.5  # l distance
 
-    #     self.liftoff_minus_state(apex_state)
+        self.liftoff_minus_state(apex_state, False)
 
     def test_liftoff_minus_state_1(self):
         apex_state = np.zeros(10)
@@ -833,58 +833,50 @@ class TestTakeOffPlus(unittest.TestCase):
 
         self.liftoff_minus_state(apex_state, False)
 
-    # def test_liftoff_minus_state_2(self):
-    #     apex_state = np.zeros(10)
-    #     apex_state[1] = 3.5  # height
-    #     apex_state[3] = -0.1  # alpha
-    #     apex_state[4] = 0.5  # l distance
+    def test_liftoff_minus_state_2(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[3] = -0.1  # alpha
+        apex_state[4] = 0.5  # l distance
 
-    #     self.liftoff_minus_state(apex_state)
+        self.liftoff_minus_state(apex_state, False)
 
-    # def test_liftoff_minus_state_3(self):
-    #     apex_state = np.zeros(10)
-    #     apex_state[1] = 3.5  # height
-    #     apex_state[2] = -0.05  # theta
-    #     apex_state[3] = -0.05  # alpha
-    #     apex_state[4] = 0.5  # l distance
+    def test_liftoff_minus_state_3(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[2] = -0.05  # theta
+        apex_state[3] = -0.05  # alpha
+        apex_state[4] = 0.5  # l distance
 
-    #     self.liftoff_minus_state(apex_state)
+        self.liftoff_minus_state(apex_state, False)
 
-    # def test_liftoff_minus_state_4(self):
-    #     apex_state = np.zeros(10)
-    #     apex_state[1] = 3.5  # height
-    #     apex_state[2] = -0.2  # theta
-    #     apex_state[4] = 0.5  # l distance
+    def test_liftoff_minus_state_4(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[2] = -0.2  # theta
+        apex_state[4] = 0.5  # l distance
 
-    #     self.liftoff_minus_state(apex_state)
+        self.liftoff_minus_state(apex_state, False)
 
-    # def test_liftoff_minus_state_5(self):
-    #     apex_state = np.zeros(10)
-    #     apex_state[1] = 3.5  # height
-    #     apex_state[3] = -0.2  # alpha
-    #     apex_state[4] = 0.5  # l distance
+    def test_liftoff_minus_state_6(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        apex_state[2] = -0.1  # theta
+        apex_state[3] = -0.1  # alpha
+        apex_state[4] = 0.5  # l distance
 
-    #     self.liftoff_minus_state(apex_state)
+        self.liftoff_minus_state(apex_state, False)
 
-    # def test_liftoff_minus_state_6(self):
-    #     apex_state = np.zeros(10)
-    #     apex_state[1] = 3.5  # height
-    #     apex_state[2] = -0.1  # theta
-    #     apex_state[3] = -0.1  # alpha
-    #     apex_state[4] = 0.5  # l distance
+    def test_liftoff_minus_state_5(self):
+        apex_state = np.zeros(10)
+        apex_state[1] = 3.5  # height
+        # theta => The problem is when I add theta, it fails
+        apex_state[2] = -0.1
+        apex_state[3] = -0.1  # alpha
+        apex_state[4] = 0.5  # l distance
+        apex_state[0+5] = 1.0  # xd
 
-    #     self.liftoff_minus_state(apex_state)
-
-    # def test_liftoff_minus_state_5(self):
-    #     apex_state = np.zeros(10)
-    #     apex_state[1] = 3.5  # height
-    #     # theta => The problem is when I add theta, it fails
-    #     apex_state[2] = -0.1
-    #     apex_state[3] = -0.1  # alpha
-    #     apex_state[4] = 0.5  # l distance
-    #     apex_state[0+5] = 1.0  # xd
-
-    #     self.liftoff_minus_state(apex_state)
+        self.liftoff_minus_state(apex_state, False)
 
     def liftoff_minus_state(self, apex_state, log_full_time):
         # Use Simulate2dHopper to simulate
@@ -939,18 +931,18 @@ class TestTakeOffPlus(unittest.TestCase):
         print(np.shape(simulated_state_logs))
         print(np.shape(calculated_state_logs))
 
-        if log_full_time:
-            self.log_state_log(
-                state_log.sample_times(),
-                state_log.data(),
-                calculated_state_logs
-            )
-        else:
-            self.log_state_log(
-                sample_times,
-                simulated_state_logs,
-                calculated_state_logs
-            )
+        # if log_full_time:
+        #     self.log_state_log(
+        #         state_log.sample_times(),
+        #         state_log.data(),
+        #         calculated_state_logs
+        #     )
+        # else:
+        #     self.log_state_log(
+        #         sample_times,
+        #         simulated_state_logs,
+        #         calculated_state_logs
+        #     )
 
         print('\nsimulated_state_at_liftoff_minus')
         print(simulated_state_at_liftoff_minus)
