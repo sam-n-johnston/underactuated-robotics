@@ -338,7 +338,7 @@ class Hopper2dController(VectorSystem):
             # Calculate moment of inertia
             moment_of_inertia = (self.m_f *
                                  (self.hopper_leg_length / 2.0) ** 2.0 +
-                                 self.m_b * (leg_length_com + 0.4) ** 2.0)
+                                 self.m_b * (leg_length_com) ** 2.0)
 
             # Update acceleration
             total_torque = f_gravity_torque
@@ -411,9 +411,9 @@ class Hopper2dController(VectorSystem):
             if not self.is_foot_in_contact(current_state):
                 # If beta > pi / 2.0 => then we need to stop
                 # if current_state[1] < 0.1:
-                print('LIFTED OFF!')
-                print(current_state)
-                print(current_time)
+                # print('LIFTED OFF!')
+                # print(current_state)
+                # print(current_time)
                 found_liftoff_minus_state = True
 
         if not found_liftoff_minus_state:
@@ -426,8 +426,8 @@ class Hopper2dController(VectorSystem):
         touchdown_minus_state = self.get_touchdown_minus_state_based_on_flight_state(
             flight_phase)
 
-        print('touchdown!')
-        print(touchdown_minus_state)
+        # print('touchdown!')
+        # print(touchdown_minus_state)
 
         liftoff_minus, state_logs = self.get_liftoff_minus_state_based_on_touchdown_plus_state(
             touchdown_minus_state,
@@ -471,8 +471,9 @@ class Hopper2dController(VectorSystem):
     def get_touchdown_beta_for_liftoff_beta(self, flight_state):
         # Controlled by setting touchdown beta
         # set the desired lo+ beta and see if the controller can find it, then test in simulation
-        kp_beta = 0.1
+        kp_beta = 0.2
         kp_l = 0.1
+        max_beta = 1.3
 
         state = flight_state.copy()
         # Set state to current value
@@ -503,30 +504,43 @@ class Hopper2dController(VectorSystem):
                 beta_diff = abs(desired_ratio - current_ratio)
                 state[3] = state[3] + kp_beta * beta_diff
 
-            desired_liftoff_minus_speed = math.sqrt(
-                desired_zd_plus ** 2.0 + desired_xd_plus ** 2.0)
+            print(liftoff_minus_state)
 
-            current_liftoff_minus_speed = math.sqrt(
-                liftoff_minus_state[0+5] ** 2.0 + liftoff_minus_state[1+5] ** 2.0)
+            # desired_liftoff_minus_speed = math.sqrt(
+            #     desired_zd_plus ** 2.0 + desired_xd_plus ** 2.0)
 
-            if current_liftoff_minus_speed > desired_liftoff_minus_speed:
-                # P controller
-                speed_diff = abs(current_liftoff_minus_speed -
-                                 desired_liftoff_minus_speed)
-                l_at_bottom = l_at_bottom - kp_l * speed_diff
-            elif current_liftoff_minus_speed < desired_liftoff_minus_speed:
-                # P controller
-                speed_diff = abs(current_liftoff_minus_speed -
-                                 desired_liftoff_minus_speed)
-                l_at_bottom = l_at_bottom + kp_l * speed_diff
+            # current_liftoff_minus_speed = math.sqrt(
+            #     liftoff_minus_state[0+5] ** 2.0 + liftoff_minus_state[1+5] ** 2.0)
 
-        print('desired_liftoff_beta: \t\t\t' + str(state[3]))
-        print('desired_liftoff_minus_speed: \t\t' +
-              str(desired_liftoff_minus_speed))
-        print('current_desired_touchdown_beta: \t' +
-              str(self.current_desired_touchdown_beta))
+            # if current_liftoff_minus_speed > desired_liftoff_minus_speed:
+            #     # P controller
+            #     speed_diff = abs(current_liftoff_minus_speed -
+            #                      desired_liftoff_minus_speed)
+            #     l_at_bottom = l_at_bottom - kp_l * speed_diff
+            # elif current_liftoff_minus_speed < desired_liftoff_minus_speed:
+            #     # P controller
+            #     speed_diff = abs(current_liftoff_minus_speed -
+            #                      desired_liftoff_minus_speed)
+            #     l_at_bottom = l_at_bottom + kp_l * speed_diff
 
-        return self.get_beta(state[2], state[3]), l_at_bottom
+        # print('desired_liftoff_beta: \t\t\t' + str(state[3]))
+        # print('desired_liftoff_minus_speed: \t\t' +
+        #       str(desired_liftoff_minus_speed))
+
+        print('DONE==============================')
+        print(desired_ratio)
+        print(current_ratio)
+        desired_beta = self.get_beta(state[2], state[3])
+
+        if desired_beta > max_beta:
+            desired_beta = max_beta
+        if desired_beta < -max_beta:
+            desired_beta = -max_beta
+
+        # print('current_desired_touchdown_beta: \t' +
+        #       str(desired_beta))
+
+        return desired_beta, 1.0
 
     def PD_controller_thigh_torque(self, current_beta, current_betad, desired_beta, desired_betad):
         Kp = -50.
@@ -593,6 +607,8 @@ class Hopper2dController(VectorSystem):
               str(self.total_number_of_hops))
         print('self.current_desired_l_at_bottom: \t' +
               str(self.current_desired_l_at_bottom))
+        print('self.current_desired_touchdown_beta: \t' +
+              str(self.current_desired_touchdown_beta))
 
         current_beta = self.get_beta(current_state[2], current_state[3])
         current_betad = self.get_beta(current_state[2+5], current_state[3+5])
