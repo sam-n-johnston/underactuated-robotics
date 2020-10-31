@@ -328,7 +328,10 @@ class Hopper2dController(VectorSystem):
                 math.cos(previous_beta1)
             leg_force = spring_force - f_gravity_along_leg_frame
             # TODO: Add centripical force here
-            acceleration_along_leg_frame = leg_force / self.m_b
+            # Thus, this is incorrect! acceleration_along_leg_frame
+            # print('ACC: {:.{}f}'.format(leg_force, 3))
+            acceleration_along_leg_frame = 0.0 if current_state[
+                4] == self.l_max else leg_force / self.m_b
 
             # Calculate rotational acceleration
             f_gravity_body_perpendicular_to_leg_frame = f_gravity_body * \
@@ -348,6 +351,9 @@ class Hopper2dController(VectorSystem):
                                  (self.hopper_leg_length / 2.0) ** 2.0 +
                                  self.m_b * (previous_leg_length) ** 2.0)
 
+            print('moment intertion: {:.{}f}'.format(moment_of_inertia, 3) +
+                  '\t gravity: {:.{}f}'.format(f_gravity_along_leg_frame, 3))
+
             # Update acceleration
             total_torque = f_gravity_torque
             acceleration = total_torque / previous_moment_of_inertia
@@ -355,7 +361,8 @@ class Hopper2dController(VectorSystem):
                 previous_moment_of_inertia / moment_of_inertia + acceleration * timestep
 
             # Update those velocities based on the rotational acceleration
-            new_velocity_along_leg_frame = previous_velocity_along_leg_frame + \
+            new_velocity_along_leg_frame = 0.0 if current_state[
+                4] == self.l_max else previous_velocity_along_leg_frame + \
                 acceleration_along_leg_frame * timestep
             new_velocity_perpendicular_to_leg_frame = new_angular_velocity * previous_leg_length
 
@@ -421,7 +428,8 @@ class Hopper2dController(VectorSystem):
             new_alpha = beta1 - current_state[2]
             current_state[3] = new_alpha
             current_state[3+5] = new_angular_velocity
-            current_state[4+5] = previous_velocity_along_leg_frame
+            # previous_velocity_along_leg_frame is incorrect!
+            current_state[4+5] = 0.0 if current_state[4] == self.l_max else previous_velocity_along_leg_frame
 
             current_time = current_time + timestep\
 
@@ -435,8 +443,12 @@ class Hopper2dController(VectorSystem):
             state_logs = np.append(
                 state_logs, current_state[:, np.newaxis], axis=1)
 
-            if not self.is_foot_in_contact(current_state):
+            # if not self.is_foot_in_contact(current_state):
+            # If beta > pi / 2.0 => then we need to stop
+            if current_state[1] < 0.1:
                 print('LIFTED OFF!')
+                print(current_state)
+                print(current_time)
                 found_liftoff_minus_state = True
 
         if not found_liftoff_minus_state:
@@ -448,6 +460,9 @@ class Hopper2dController(VectorSystem):
     def get_liftoff_minus_state_based_on_flight_state(self, flight_phase, l_at_bottom):
         touchdown_minus_state = self.get_touchdown_minus_state_based_on_flight_state(
             flight_phase)
+
+        print('touchdown!')
+        print(touchdown_minus_state)
 
         liftoff_minus, state_logs = self.get_liftoff_minus_state_based_on_touchdown_plus_state(
             touchdown_minus_state,
