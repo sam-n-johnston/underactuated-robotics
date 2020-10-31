@@ -284,10 +284,6 @@ class Hopper2dController(VectorSystem):
 
         state_logs = np.copy(current_state)
         state_logs = state_logs[:, np.newaxis]
-        print('START: {:.{}f}'.format(current_state[1+5], 3))
-        print(previous_beta1)
-
-        # touchdown_time = 0.645
 
         previous_velocity_along_leg_frame = current_state[0+5] * math.sin(
             previous_beta1) + current_state[1+5] * math.cos(previous_beta1)
@@ -300,20 +296,6 @@ class Hopper2dController(VectorSystem):
         previous_moment_of_inertia = (self.m_f *
                                       (self.hopper_leg_length / 2.0) ** 2.0 +
                                       self.m_b * (previous_leg_length) ** 2.0)
-
-        print('previous_velocity_along_leg_frame')
-        print(previous_leg_length)
-        # print(current_state[0+5] * math.sin(
-        #     previous_beta1))
-        # print(current_state[1+5] * math.cos(previous_beta1))
-        # print(current_state[0+5] * math.cos(
-        #     previous_beta1))
-        # print(-current_state[1+5] * math.sin(previous_beta1))
-        # print('done')
-        # print(previous_velocity_along_leg_frame)
-        # print(previous_velocity_perpendicular_to_leg_frame)
-
-        # def is_acceleration_along_leg_frame_zero():
 
         while not found_liftoff_minus_state and current_time < 2.0:
             # bottom_reached = current_state[1+5] > 0.0
@@ -330,8 +312,6 @@ class Hopper2dController(VectorSystem):
             f_gravity_along_leg_frame = f_gravity_body * \
                 math.cos(previous_beta1)
 
-            # if current_state[4] >= self.l_max and self.is_foot_in_contact(current_state) and current_state[1+5] < 0.2 and current_state[1+5] > -0.2:
-            #     print('stoping bounce')
             # previous_velocity_along_leg_frame = 0.0
             # spring_force = f_gravity_along_leg_frame
 
@@ -339,11 +319,6 @@ class Hopper2dController(VectorSystem):
             # TODO: Add centripical force here
             # to use correct formula
             acceleration_along_leg_frame = leg_force / self.m_b
-
-            # print('ACC: {:.{}f}'.format(acceleration_along_leg_frame,
-            #                             3) + '\t l: {:.{}f}'.format(current_state[4], 3)
-            #       + '\t prev vel: {:.{}f}'.format(previous_velocity_along_leg_frame, 3)
-            #       + '\t contact?: ' + str(self.is_foot_in_contact(current_state)))
 
             # Calculate rotational acceleration
             f_gravity_body_perpendicular_to_leg_frame = f_gravity_body * \
@@ -374,16 +349,7 @@ class Hopper2dController(VectorSystem):
             # new_angular_velocity = (delta_angular_momentum + previous_moment_of_inertia *
             #                         previous_angular_velocity) / moment_of_inertia
 
-            # print('current z: {:.{}f}'.format(current_state[1], 3) +
-            #       '\t foot pos: {:.{}f}'.format(foot_position[1], 3) +
-            #       '\t leg length: {:.{}f}'.format(previous_leg_length, 3) +
-            #       '\t prev moment: {:.{}f}'.format(previous_moment_of_inertia, 3) +
-            #       '\t new moment: {:.{}f}'.format(moment_of_inertia, 3))
-
             # Update those velocities based on the rotational acceleration
-
-            # print('time: ' + str(current_time) + '\ttime: ' + str(previous_beta1) +
-            #       '\ttorque: ' + str(total_torque))
             new_velocity_along_leg_frame = previous_velocity_along_leg_frame + \
                 acceleration_along_leg_frame * timestep
             new_velocity_perpendicular_to_leg_frame = new_angular_velocity * previous_leg_length
@@ -408,22 +374,12 @@ class Hopper2dController(VectorSystem):
                 new_velocity_perpendicular_to_leg_frame * \
                 math.sin(previous_beta1)
 
-            # print('along: {:.{}f}'.format(new_velocity_along_leg_frame, 3) +
-            #       '\t perpendicular: {:.{}f}'.format(new_velocity_perpendicular_to_leg_frame, 3) +
-            #       '\t beta: {:.{}f}'.format(beta, 3) +
-            #       '\t beta1: {:.{}f}'.format(beta1, 3))
-            # print('1: {:.{}f}'.format(current_state[1+5], 3))
-
-            # Use leglength and beta1 to figure out current_state[0 & 1]
-
             leg_length = previous_leg_length + new_velocity_along_leg_frame * timestep
             previous_leg_length = leg_length
 
             # Set new positions
             delta_x = math.sin(beta1) * leg_length
             delta_z = math.cos(beta1) * leg_length
-            # print('delta_x: {:.{}f}'.format(delta_x, 5) + '\t beta1: {:.{}f}'.format(
-            #     beta1, 5) + '\t leg length:: {:.{}f}'.format(leg_length, 5))
             current_state[0] = foot_position[0] + delta_x
             current_state[1] = foot_position[1] + delta_z
 
@@ -448,13 +404,6 @@ class Hopper2dController(VectorSystem):
             current_state[4+5] = previous_velocity_along_leg_frame
 
             current_time = current_time + timestep\
-
-            # print('{:.{}f}'.format(current_time + touchdown_time, 5) +
-            #       '\t x: ' + '{:.{}f}'.format(current_state[0], 5) +
-            #       '\t l: ' + '{:.{}f}'.format(current_state[4], 5)
-            #       )
-            # print(leg_length)
-            # print(current_state)
 
             state_logs = np.append(
                 state_logs, current_state[:, np.newaxis], axis=1)

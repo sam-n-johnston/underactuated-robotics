@@ -909,16 +909,8 @@ class TestTakeOffPlus(unittest.TestCase):
         extra_right_padding = simulated_state_index_at_liftoff_minus - \
             extra_left_padding - np.shape(calculated_state_logs)[1]
 
-        print('STARING')
-        print(simulated_state_index_at_touchdown_plus)
-        print(simulated_state_index_at_liftoff_minus)
-
         if extra_right_padding < 0:
             extra_right_padding = 0
-
-        print('TRYING1')
-        print(np.shape(simulated_state_logs))
-        print(np.shape(calculated_state_logs))
 
         if log_full_time:
             calculated_state_logs = np.pad(
@@ -926,10 +918,6 @@ class TestTakeOffPlus(unittest.TestCase):
         else:
             calculated_state_logs = np.pad(
                 calculated_state_logs, ((0, 0), (extra_left_padding, extra_right_padding)))
-
-        print('TRYING2')
-        print(np.shape(simulated_state_logs))
-        print(np.shape(calculated_state_logs))
 
         if plot:
             if log_full_time:
@@ -944,11 +932,6 @@ class TestTakeOffPlus(unittest.TestCase):
                     simulated_state_logs,
                     calculated_state_logs
                 )
-
-        print('\nsimulated_state_at_liftoff_minus')
-        print(simulated_state_at_liftoff_minus)
-        print('calculated_state_at_liftoff_minus')
-        print(calculated_state_at_liftoff_minus)
 
         simulated_beta = controller.get_beta(
             simulated_state_at_liftoff_minus[2], simulated_state_at_liftoff_minus[3])
