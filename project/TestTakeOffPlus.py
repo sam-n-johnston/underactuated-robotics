@@ -827,11 +827,11 @@ class TestTakeOffPlus(unittest.TestCase):
 
     def test_liftoff_minus_state_1(self):
         apex_state = np.zeros(10)
-        apex_state[1] = 1.5  # height
+        apex_state[1] = 3.5  # height
         apex_state[3] = -0.1  # alpha
         apex_state[4] = 0.5  # l distance
 
-        self.liftoff_minus_state(apex_state)
+        self.liftoff_minus_state(apex_state, False)
 
     # def test_liftoff_minus_state_2(self):
     #     apex_state = np.zeros(10)
@@ -886,7 +886,7 @@ class TestTakeOffPlus(unittest.TestCase):
 
     #     self.liftoff_minus_state(apex_state)
 
-    def liftoff_minus_state(self, apex_state):
+    def liftoff_minus_state(self, apex_state, log_full_time):
         # Use Simulate2dHopper to simulate
         hopper, controller, state_log, animation = Simulate2dHopper(x0=apex_state,
                                                                     duration=2.0,
@@ -906,50 +906,51 @@ class TestTakeOffPlus(unittest.TestCase):
             apex_state, 1.0)
 
         simulated_state_logs = np.copy(state_log.data())
-        # simulated_state_logs = state_log.sample_times()
-        # simulated_state_logs[:, 0:simulated_state_index_at_liftoff_minus]
+        if not log_full_time:
+            simulated_state_logs = simulated_state_logs[:,
+                                                        0:simulated_state_index_at_liftoff_minus]
 
         sample_times = state_log.sample_times(
         )[0:simulated_state_index_at_liftoff_minus]
 
-        # extra_left_padding = simulated_state_index_at_touchdown_plus
-        # simulated_state_index_at_liftoff_minus - \
-        #     extra_left_padding - np.shape(calculated_state_logs)[1]
+        extra_left_padding = simulated_state_index_at_touchdown_plus
+        extra_right_padding = simulated_state_index_at_liftoff_minus - \
+            extra_left_padding - np.shape(calculated_state_logs)[1]
 
         print('STARING')
         print(simulated_state_index_at_touchdown_plus)
         print(simulated_state_index_at_liftoff_minus)
 
-        # if extra_right_padding < 0:
-        #     extra_right_padding = 0
-        #     print('STARING1')
-        #     print(extra_right_padding)
-        #     print(np.shape(calculated_state_logs))
-        #     calculated_state_logs = calculated_state_logs[:,
-        #                                                   0:extra_right_padding]
-        #     print(np.shape(calculated_state_logs))
-        #     print(np.shape(simulated_state_logs))
-        #     # print(sample_times[0])
-        #     # print(sample_times[1])
-        #     # simulated_state_logs = np.pad(
-        #     #     simulated_state_logs, ((0, 0), (0, -extra_right_padding)))
-        #     # extra_right_padding = 0
+        if extra_right_padding < 0:
+            extra_right_padding = 0
 
-        print('TRYING')
+        print('TRYING1')
         print(np.shape(simulated_state_logs))
         print(np.shape(calculated_state_logs))
 
-        extra_right_padding = np.shape(simulated_state_logs)[
-            1] - np.shape(calculated_state_logs)[1]
+        if log_full_time:
+            calculated_state_logs = np.pad(
+                calculated_state_logs, ((0, 0), (0,  np.shape(simulated_state_logs)[1] - np.shape(calculated_state_logs)[1])))
+        else:
+            calculated_state_logs = np.pad(
+                calculated_state_logs, ((0, 0), (extra_left_padding, extra_right_padding)))
 
-        calculated_state_logs = np.pad(
-            calculated_state_logs, ((0, 0), (0, extra_right_padding)))
+        print('TRYING2')
+        print(np.shape(simulated_state_logs))
+        print(np.shape(calculated_state_logs))
 
-        self.log_state_log(
-            state_log.sample_times(),
-            state_log.data(),
-            calculated_state_logs
-        )
+        if log_full_time:
+            self.log_state_log(
+                state_log.sample_times(),
+                state_log.data(),
+                calculated_state_logs
+            )
+        else:
+            self.log_state_log(
+                sample_times,
+                simulated_state_logs,
+                calculated_state_logs
+            )
 
         print('\nsimulated_state_at_liftoff_minus')
         print(simulated_state_at_liftoff_minus)
@@ -970,6 +971,22 @@ class TestTakeOffPlus(unittest.TestCase):
         self.assertAlmostEqual(
             calculated_beta, simulated_beta, 1)
 
+    def estimate_accelerations(self, state_log):
+        timestep = 0.0005
+        state_log_d_only = state_log[0+5:5+5, :]
+        state_log_copy = np.copy(state_log_d_only)
+
+        number_of_state = np.shape(state_log)[1]
+
+        max_acc = 100.0
+
+        for i in range(1, number_of_state):
+            state_log_copy[:, i] = np.add(
+                state_log_d_only[:, i],  - state_log_d_only[:, i - 1]) / timestep
+            np.clip(state_log_copy[:, i], -max_acc, max_acc)
+
+        return state_log_copy
+
     def log_state_log(
         self,
         simulated_sample_times,
@@ -989,13 +1006,23 @@ class TestTakeOffPlus(unittest.TestCase):
                 simulated_sample_times, simulated_state_log, 'simulated_')
             return
 
+        simulated_accelerations = self.estimate_accelerations(
+            simulated_state_log)
+        calculated_accelerations = self.estimate_accelerations(
+            calculated_state_log)
+
         def log_single_state(index, name):
             plt.figure().set_size_inches(10, 5)
             plt.plot(simulated_sample_times, simulated_state_log[index, :])
             plt.plot(simulated_sample_times, simulated_state_log[index+5, :])
+            # plt.plot(simulated_sample_times, simulated_accelerations[index, :])
             plt.plot(simulated_sample_times, calculated_state_log[index, :])
             plt.plot(simulated_sample_times, calculated_state_log[index+5, :])
+            # plt.plot(simulated_sample_times,
+            #          calculated_accelerations[index, :])
             plt.grid(True)
+            # plt.legend(["simulated_" + name, "simulated_" + name + "_d", "simulated_" + name + "_dd",
+            #             "calculated_" + name, "calculated_" + name + "_d", "calculated_" + name + "_dd"])
             plt.legend(["simulated_" + name, "simulated_" + name + "_d",
                         "calculated_" + name, "calculated_" + name + "_d"])
 
@@ -1009,13 +1036,17 @@ class TestTakeOffPlus(unittest.TestCase):
             simulated_state_log[2, :], simulated_state_log[3, :]))
         plt.plot(simulated_sample_times, np.add(
             simulated_state_log[2+5, :], simulated_state_log[3+5, :]))
+        # plt.plot(simulated_sample_times, simulated_accelerations[3, :])
         plt.plot(simulated_sample_times, np.add(
             calculated_state_log[2, :], calculated_state_log[3, :]))
         plt.plot(simulated_sample_times, np.add(
             calculated_state_log[2+5, :], calculated_state_log[3+5, :]))
+        plt.plot(simulated_sample_times, calculated_accelerations[3, :])
         plt.grid(True)
         plt.legend(["simulated_beta", "simulated_beta_d",
                     "calculated_beta", "calculated_beta_d"])
+        # plt.legend(["simulated_beta", "simulated_beta_d", "simulated_beta_dd",
+        #             "calculated_beta", "calculated_beta_d", "calculated_beta_dd"])
 
         log_single_state(4, 'leg_extension')
 
