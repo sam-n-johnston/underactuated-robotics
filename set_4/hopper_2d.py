@@ -95,9 +95,9 @@ class Hopper2dController(VectorSystem):
         xd, zd, thetad, alphad, ld = X[5:10]
         xd_desired = self.desired_lateral_velocity
         theta_desired = 0
-        K1 = 1.2
-        K2 = 4.
-        K3 = 2.
+        K1 = 0.1
+        K2 = 0.05
+        K3 = 0.01
         
         return K1 * (xd - xd_desired) + K2 * (theta - theta_desired) + K3 * thetad
     
@@ -107,20 +107,27 @@ class Hopper2dController(VectorSystem):
         mb = self.m_b
         mf = self.m_f
         l = self.hopper_leg_length
-        K_err = 0.1
+        K_err = 1.0
         
         x_err = K_err * self.get_x_err(X)
         opposing_side = ((mb + mf) * x_err) / (l * mb)
 
-        if opposing_side > 1.:
-#             print('x_err is probably too |large| and is causing problems')
-            opposing_side = 1.
+        val = 2 * x_err * (self.m_f + self.m_b) / (self.l_max * (self.m_f + 2 * self.m_b))
 
-        if opposing_side < -1.:
-#             print('x_err is probably too |-large| and is causing problems')
-            opposing_side = -1.
+        if val > 1.:
+            # print('x_err is probably too |large| and is causing problems')
+            val = 1.
 
-        desired_alpha = - math.asin(opposing_side) - theta
+        if val < -1.:
+            # print('x_err is probably too |-large| and is causing problems')
+            val = -1.
+
+        # desired_alpha = - math.asin(opposing_side) - theta
+
+        theta1 = math.asin(val);
+
+        desired_alpha = - theta1 - theta;
+
         self.desired_alpha_array.append(desired_alpha)
         return desired_alpha
     
